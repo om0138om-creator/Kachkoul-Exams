@@ -1,0 +1,1166 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>منصة الاختبارات</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #667eea;
+            --secondary: #764ba2;
+            --success: #27ae60;
+            --danger: #e74c3c;
+            --warning: #f39c12;
+            --dark: #2c3e50;
+            --light: #f8f9fa;
+            --gray: #6c757d;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            min-height: 100vh;
+            padding: 15px;
+            direction: rtl;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        /* البطاقات */
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 15px 50px rgba(0,0,0,0.2);
+            text-align: center;
+            animation: slideUp 0.5s ease;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .hidden { display: none !important; }
+
+        /* العناوين */
+        h1 {
+            color: var(--dark);
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        h2 {
+            color: var(--dark);
+            font-size: 20px;
+            margin-bottom: 15px;
+        }
+
+        .subtitle {
+            color: var(--gray);
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+
+        /* أيقونة كبيرة */
+        .big-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        /* معلومات الاختبار */
+        .exam-info {
+            background: var(--light);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: right;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .info-row:last-child { border-bottom: none; }
+
+        .info-label {
+            color: var(--gray);
+            font-size: 15px;
+        }
+
+        .info-value {
+            color: var(--dark);
+            font-weight: bold;
+            font-size: 15px;
+        }
+
+        /* الأزرار */
+        .btn {
+            display: inline-block;
+            padding: 15px 35px;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: inherit;
+            margin: 8px;
+        }
+
+        .btn:active { transform: scale(0.95); }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #27ae60, #2ecc71);
+            color: white;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 2px solid var(--primary);
+            color: var(--primary);
+        }
+
+        .btn-block {
+            display: block;
+            width: 100%;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* شريط الوقت */
+        .timer-container {
+            background: white;
+            border-radius: 15px;
+            padding: 15px 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+
+        .timer-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .timer-display {
+            font-size: 22px;
+            font-weight: bold;
+            color: var(--dark);
+        }
+
+        .timer-display.danger {
+            color: var(--danger);
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .question-counter {
+            font-size: 14px;
+            color: var(--gray);
+            background: var(--light);
+            padding: 5px 15px;
+            border-radius: 20px;
+        }
+
+        .progress-track {
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            border-radius: 4px;
+            transition: width 0.4s ease;
+        }
+
+        /* بطاقة السؤال */
+        .question-card {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+
+        .question-number {
+            display: inline-block;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 8px 25px;
+            border-radius: 25px;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        .question-text {
+            font-size: 17px;
+            color: var(--dark);
+            line-height: 1.9;
+            padding: 20px;
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            border-radius: 15px;
+            border-right: 5px solid var(--primary);
+            margin-bottom: 25px;
+            text-align: right;
+            white-space: pre-wrap;
+        }
+
+        /* الاختيارات */
+        .options-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .option {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 16px 20px;
+            background: var(--light);
+            border: 2px solid #e0e0e0;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .option:hover {
+            border-color: var(--primary);
+            background: #f0f3ff;
+        }
+
+        .option.selected {
+            border-color: var(--primary);
+            background: linear-gradient(135deg, rgba(102,126,234,0.1), rgba(118,75,162,0.1));
+        }
+
+        .option.correct {
+            border-color: var(--success);
+            background: rgba(39, 174, 96, 0.15);
+        }
+
+        .option.wrong {
+            border-color: var(--danger);
+            background: rgba(231, 76, 60, 0.15);
+        }
+
+        .option.locked { pointer-events: none; }
+
+        .option-marker {
+            width: 28px;
+            height: 28px;
+            border: 2px solid #ccc;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: bold;
+            color: #ccc;
+            flex-shrink: 0;
+            transition: all 0.3s;
+        }
+
+        .option.selected .option-marker {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: white;
+        }
+
+        .option.correct .option-marker {
+            background: var(--success);
+            border-color: var(--success);
+            color: white;
+        }
+
+        .option.wrong .option-marker {
+            background: var(--danger);
+            border-color: var(--danger);
+            color: white;
+        }
+
+        .option-text {
+            flex: 1;
+            font-size: 15px;
+            color: var(--dark);
+            text-align: right;
+            line-height: 1.6;
+        }
+
+        /* زر التسليم */
+        .submit-container {
+            margin-top: 25px;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 16px;
+            font-size: 17px;
+            font-weight: 600;
+            border: none;
+            border-radius: 15px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: inherit;
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .submit-btn:not(:disabled):hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        /* شاشة النتيجة */
+        .result-icon {
+            font-size: 90px;
+            margin-bottom: 15px;
+        }
+
+        .result-score {
+            font-size: 60px;
+            font-weight: bold;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin: 15px 0;
+        }
+
+        .result-stats {
+            background: var(--light);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 25px 0;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .stat-row:last-child { border-bottom: none; }
+
+        .stat-label { color: var(--gray); }
+
+        .stat-value {
+            font-weight: bold;
+            color: var(--dark);
+        }
+
+        .stat-value.success { color: var(--success); }
+        .stat-value.danger { color: var(--danger); }
+
+        /* رسالة منبثقة */
+        .toast {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 25px 45px;
+            border-radius: 20px;
+            font-size: 22px;
+            font-weight: bold;
+            z-index: 9999;
+            animation: toastIn 0.4s ease;
+        }
+
+        .toast.success { background: #d4edda; color: var(--success); }
+        .toast.error { background: #f8d7da; color: var(--danger); }
+
+        @keyframes toastIn {
+            from { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+            to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        }
+
+        /* تنبيه */
+        .alert {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 12px;
+            padding: 15px;
+            margin: 15px 0;
+            text-align: right;
+            font-size: 14px;
+            color: #856404;
+        }
+
+        .alert-danger {
+            background: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+
+        /* شاشة التحميل */
+        .loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 50px;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #e0e0e0;
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            margin-top: 20px;
+            color: var(--gray);
+            font-size: 16px;
+        }
+
+        /* نافذة التعليل */
+        .explanation-modal {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            backdrop-filter: blur(4px);
+            animation: fadeIn 0.3s;
+        }
+        
+        .explanation-content {
+            background: white;
+            width: 90%;
+            max-width: 400px;
+            padding: 25px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            animation: slideUp 0.3s;
+        }
+
+        .explanation-title {
+            color: var(--danger);
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .explanation-text {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            color: var(--dark);
+            line-height: 1.6;
+            margin-bottom: 20px;
+            font-size: 16px;
+            border: 1px solid #eee;
+        }
+        
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        
+        <!-- شاشة التحميل -->
+        <div class="card" id="loadingScreen">
+            <div class="loading">
+                <div class="spinner"></div>
+                <div class="loading-text">جاري التحميل...</div>
+            </div>
+        </div>
+
+        <!-- شاشة لا يوجد اختبار -->
+        <div class="card hidden" id="noExamScreen">
+            <div class="big-icon">📚</div>
+            <h1>لا يوجد اختبار حالياً</h1>
+            <p class="subtitle">هذا التطبيق مخصص للاختبارات فقط</p>
+            <div class="alert">
+                ⏳ انتظر الاختبارات القادمة وسيتم إعلامك عند توفرها!
+            </div>
+            <button class="btn btn-primary" onclick="closeApp()">
+                🔙 العودة للبوت
+            </button>
+        </div>
+
+        <!-- شاشة تم الاختبار مسبقاً -->
+        <div class="card hidden" id="alreadyTakenScreen">
+            <div class="big-icon">🔒</div>
+            <h1>تم إجراء الاختبار</h1>
+            <p class="subtitle">لقد أجريت هذا الاختبار مسبقاً</p>
+            <div class="exam-info">
+                <div class="info-row">
+                    <span class="info-label">نتيجتك السابقة</span>
+                    <span class="info-value" id="prevScore">-</span>
+                </div>
+            </div>
+            <div class="alert alert-danger">
+                ⚠️ لا يُسمح بإعادة الاختبار أكثر من مرة!
+            </div>
+            <button class="btn btn-primary" onclick="closeApp()">
+                🔙 العودة للبوت
+            </button>
+        </div>
+
+        <!-- شاشة البداية -->
+        <div class="card hidden" id="startScreen">
+            <div class="big-icon">📝</div>
+            <h1 id="examTitle">الاختبار</h1>
+            <p class="subtitle">اختبر معلوماتك الآن!</p>
+            
+            <div class="exam-info">
+                <div class="info-row">
+                    <span class="info-label">❓ عدد الأسئلة</span>
+                    <span class="info-value" id="totalQuestions">0</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">⏱️ المدة المحددة</span>
+                    <span class="info-value" id="examDuration">غير محددة</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">📊 المحاولات</span>
+                    <span class="info-value">محاولة واحدة فقط</span>
+                </div>
+            </div>
+
+            <div class="alert">
+                ⚠️ <strong>تنبيه:</strong> بمجرد البدء لا يمكنك الخروج أو إعادة الاختبار!
+            </div>
+
+            <button class="btn btn-success btn-block" onclick="startExam()">
+                ✅ ابدأ الاختبار الآن
+            </button>
+            <button class="btn btn-outline" onclick="closeApp()">
+                ❌ ليس الآن
+            </button>
+        </div>
+
+        <!-- شاشة الاختبار -->
+        <div id="examScreen" class="hidden">
+            <div class="timer-container">
+                <div class="timer-header">
+                    <span class="timer-display" id="timerDisplay">⏱️ 00:00</span>
+                    <span class="question-counter" id="questionCounter">1 / 10</span>
+                </div>
+                <div class="progress-track">
+                    <div class="progress-bar" id="progressBar" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <div class="question-card">
+                <div class="question-number" id="questionBadge">السؤال 1</div>
+                <div class="question-text" id="questionText">نص السؤال يظهر هنا...</div>
+                
+                <div class="options-container" id="optionsContainer"></div>
+
+                <div class="submit-container">
+                    <button class="submit-btn" id="submitBtn" onclick="submitAnswer()" disabled>
+                        تسليم الإجابة ➡️
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- شاشة النتيجة -->
+        <div class="card hidden" id="resultScreen">
+            <div class="result-icon" id="resultIcon">🏆</div>
+            <h2 id="resultTitle">أحسنت!</h2>
+            <div class="result-score" id="resultScore">85%</div>
+            
+            <div class="result-stats">
+                <div class="stat-row">
+                    <span class="stat-label">📊 إجمالي الأسئلة</span>
+                    <span class="stat-value" id="statTotal">10</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">✅ الإجابات الصحيحة</span>
+                    <span class="stat-value success" id="statCorrect">8</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">❌ الإجابات الخاطئة</span>
+                    <span class="stat-value danger" id="statWrong">2</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">⏱️ الوقت المستغرق</span>
+                    <span class="stat-value" id="statTime">05:30</span>
+                </div>
+            </div>
+
+            <p style="color: var(--success); margin-bottom: 20px;">
+                ✅ تم حفظ نتيجتك بنجاح!
+            </p>
+
+            <button class="btn btn-primary btn-block" onclick="closeApp()">
+                🏠 العودة للبوت
+            </button>
+        </div>
+
+        <div id="explanationModal" class="explanation-modal hidden">
+            <div class="explanation-content">
+                <div class="explanation-title">❌ إجابة خاطئة</div>
+                <div id="explanationText" class="explanation-text"></div>
+                <button class="btn btn-primary btn-block" onclick="closeExplanation()">
+                    التالي ⬅️
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ═══════════════════════════════════════════════════════
+        //                    الإعدادات
+        // ═══════════════════════════════════════════════════════
+        
+        const BOT_TOKEN = "8320893492:AAEVPyOQ31BImkeTtt3z-WaSJ52INc05vgw";
+        const CHANNEL_ID = "-1003308250289";
+        
+        // ═══════════════════════════════════════════════════════
+        //                    المتغيرات
+        // ═══════════════════════════════════════════════════════
+        
+        let tg = null;
+        let examData = null;
+        let currentQuestion = 0;
+        let selectedOption = null;
+        let userAnswers = [];
+        let timerInterval = null;
+        let timeRemaining = 0;
+        let startTime = null;
+
+        // ═══════════════════════════════════════════════════════
+        //                    التهيئة
+        // ═══════════════════════════════════════════════════════
+        
+        try {
+            tg = window.Telegram.WebApp;
+            tg.ready();
+            tg.expand();
+            tg.MainButton.hide();
+        } catch(e) {
+            console.log('Not running in Telegram');
+        }
+
+        // ═══════════════════════════════════════════════════════
+        //                    تحميل البيانات
+        // ═══════════════════════════════════════════════════════
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(loadExamData, 500);
+        });
+
+        function loadExamData() {
+            try {
+                const urlParams = new URLSearchParams(window.location.search);
+                const data = urlParams.get('data');
+                
+                if (!data) {
+                    showScreen('noExamScreen');
+                    return;
+                }
+
+                // 1. استبدال الرموز لفك Base64
+                const base64 = data.replace(/-/g, '+').replace(/_/g, '/');
+                
+                // 2. تحويل Base64 إلى مصفوفة بايتات (Uint8Array)
+                const binaryString = window.atob(base64);
+                const bytes = new Uint8Array(binaryString.length);
+                for (let i = 0; i < binaryString.length; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
+                }
+
+                // 3. فك الضغط باستخدام مكتبة pako
+                // هذه الخطوة تعيد البيانات المضغوطة إلى نصها الأصلي
+                const jsonString = pako.inflate(bytes, { to: 'string' });
+                
+                // 4. تحويل النص إلى JSON
+                const rawData = JSON.parse(jsonString);
+
+                if (!rawData) {
+                    showScreen('noExamScreen');
+                    return;
+                }
+
+                // إعادة بناء البيانات
+                examData = {
+                    id: rawData.i || rawData.id,
+                    user_id: rawData.u || rawData.user_id,
+                    title: rawData.t || rawData.title,
+                    duration: rawData.d || rawData.duration,
+                    questions: []
+                };
+
+                const questionsList = rawData.q || rawData.questions || [];
+                
+                examData.questions = questionsList.map(item => {
+                    return {
+                        id: item.i || item.id,
+                        text: item.k || item.text,
+                        options: item.o || item.options,
+                        correct: item.c || item.correct,
+                        explanations: item.e || item.explanations
+                    };
+                });
+
+                if (examData.questions.length === 0) {
+                    showScreen('noExamScreen');
+                    return;
+                }
+
+                // التحقق من الاختبارات السابقة
+                const examKey = `exam_${examData.id}_${examData.user_id}`;
+                const previousResult = localStorage.getItem(examKey);
+                
+                if (previousResult) {
+                    const prevData = JSON.parse(previousResult);
+                    document.getElementById('prevScore').textContent = prevData.score + '%';
+                    showScreen('alreadyTakenScreen');
+                    return;
+                }
+
+                // عرض شاشة البداية
+                document.getElementById('examTitle').textContent = examData.title || 'الاختبار';
+                document.getElementById('totalQuestions').textContent = examData.questions.length;
+                document.getElementById('examDuration').textContent = 
+                    examData.duration && examData.duration > 0 ? 
+                    examData.duration + ' دقيقة' : 'غير محددة';
+                
+                showScreen('startScreen');
+
+            } catch(e) {
+                console.error('Error loading exam:', e);
+                alert('حدث خطأ أثناء تحميل بيانات الاختبار: ' + e.message);
+                showScreen('noExamScreen');
+            }
+        }
+
+
+        function showScreen(screenId) {
+            document.querySelectorAll('.card, #examScreen').forEach(el => {
+                el.classList.add('hidden');
+            });
+            document.getElementById(screenId).classList.remove('hidden');
+        }
+
+        // ═══════════════════════════════════════════════════════
+        //                    بدء الاختبار
+        // ═══════════════════════════════════════════════════════
+        
+        function startExam() {
+            showScreen('examScreen');
+            
+            startTime = new Date();
+            userAnswers = [];
+            currentQuestion = 0;
+
+            if (examData.duration && examData.duration > 0) {
+                timeRemaining = examData.duration * 60;
+                startTimer();
+            } else {
+                document.getElementById('timerDisplay').textContent = '⏱️ --:--';
+            }
+
+            displayQuestion(0);
+        }
+
+        // ═══════════════════════════════════════════════════════
+        //                    المؤقت
+        // ═══════════════════════════════════════════════════════
+        
+        function startTimer() {
+            updateTimerDisplay();
+            timerInterval = setInterval(() => {
+                timeRemaining--;
+                updateTimerDisplay();
+                
+                if (timeRemaining <= 0) {
+                    clearInterval(timerInterval);
+                    finishExam(true);
+                }
+            }, 1000);
+        }
+
+        function updateTimerDisplay() {
+            const minutes = Math.floor(timeRemaining / 60);
+            const seconds = timeRemaining % 60;
+            const display = document.getElementById('timerDisplay');
+            
+            display.textContent = `⏱️ ${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            
+            if (timeRemaining <= 60) {
+                display.classList.add('danger');
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════
+        //                    عرض السؤال
+        // ═══════════════════════════════════════════════════════
+        
+        function displayQuestion(index) {
+            const question = examData.questions[index];
+            currentQuestion = index;
+            selectedOption = null;
+
+            // تحديث المعلومات
+            document.getElementById('questionBadge').textContent = `السؤال ${index + 1}`;
+            document.getElementById('questionText').textContent = question.text;
+            document.getElementById('questionCounter').textContent = 
+                `${index + 1} / ${examData.questions.length}`;
+            
+            // شريط التقدم
+            const progress = ((index + 1) / examData.questions.length) * 100;
+            document.getElementById('progressBar').style.width = progress + '%';
+
+            // عرض الاختيارات
+            const container = document.getElementById('optionsContainer');
+            container.innerHTML = '';
+
+            const markers = ['أ', 'ب', 'ج', 'د', 'هـ', 'و'];
+            
+            question.options.forEach((option, i) => {
+                const optionEl = document.createElement('div');
+                optionEl.className = 'option';
+                optionEl.onclick = () => selectOption(i + 1, optionEl);
+                optionEl.innerHTML = `
+                    <div class="option-marker">${markers[i] || (i + 1)}</div>
+                    <div class="option-text">${option}</div>
+                `;
+                container.appendChild(optionEl);
+            });
+
+            // زر التسليم
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = (index === examData.questions.length - 1) ? 
+                'إنهاء الاختبار ✅' : 'السؤال التالي ➡️';
+        }
+
+        // ═══════════════════════════════════════════════════════
+        //                    اختيار إجابة
+        // ═══════════════════════════════════════════════════════
+        
+        function selectOption(optionNum, element) {
+            document.querySelectorAll('.option').forEach(opt => {
+                opt.classList.remove('selected');
+            });
+            
+            element.classList.add('selected');
+            selectedOption = optionNum;
+            document.getElementById('submitBtn').disabled = false;
+        }
+
+        // ═══════════════════════════════════════════════════════
+        //                    تسليم الإجابة
+        // ═══════════════════════════════════════════════════════
+        
+        function submitAnswer() {
+            if (selectedOption === null) return;
+
+            const question = examData.questions[currentQuestion];
+            const isCorrect = selectedOption === question.correct;
+
+            // حفظ الإجابة
+            userAnswers.push({
+                questionId: question.id,
+                selected: selectedOption,
+                correct: question.correct,
+                isCorrect: isCorrect
+            });
+
+            // تلوين الإجابات
+            const options = document.querySelectorAll('.option');
+            options.forEach((opt, i) => {
+                opt.classList.add('locked');
+                if (i + 1 === question.correct) {
+                    opt.classList.add('correct');
+                } else if (i + 1 === selectedOption && !isCorrect) {
+                    opt.classList.add('wrong');
+                }
+            });
+
+            document.getElementById('submitBtn').disabled = true;
+
+            // المنطق الجديد للتعليل
+            if (!isCorrect && question.explanations && question.explanations[selectedOption]) {
+                setTimeout(() => {
+                    document.getElementById('explanationText').textContent = question.explanations[selectedOption];
+                    document.getElementById('explanationModal').classList.remove('hidden');
+                }, 600);
+            } else {
+                // الطريقة العادية
+                showToast(isCorrect ? '✅ إجابة صحيحة!' : '❌ إجابة خاطئة!', isCorrect);
+                setTimeout(() => {
+                    goToNextQuestion();
+                }, 1500);
+            }
+        }
+
+        function closeExplanation() {
+            document.getElementById('explanationModal').classList.add('hidden');
+            goToNextQuestion();
+        }
+
+        function goToNextQuestion() {
+            if (currentQuestion < examData.questions.length - 1) {
+                displayQuestion(currentQuestion + 1);
+            } else {
+                finishExam(false);
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════
+        //                    رسالة منبثقة
+        // ═══════════════════════════════════════════════════════
+        
+        function showToast(message, success) {
+            const toast = document.createElement('div');
+            toast.className = `toast ${success ? 'success' : 'error'}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => toast.remove(), 1200);
+        }
+
+        // ═══════════════════════════════════════════════════════
+        //                    إنهاء الاختبار
+        // ═══════════════════════════════════════════════════════
+        
+        // متغير لحفظ البيانات لإرسالها للبوت
+        let finalResultToBot = null;
+
+        function finishExam(timeout) {
+            if (timerInterval) clearInterval(timerInterval);
+
+            // حساب الوقت والدرجات
+            const endTime = new Date();
+            const timeTakenSeconds = Math.floor((endTime - startTime) / 1000);
+            
+            const totalQuestions = examData.questions.length;
+            const correctCount = userAnswers.filter(a => a.isCorrect).length;
+            const wrongCount = totalQuestions - correctCount;
+            const scorePercent = Math.round((correctCount / totalQuestions) * 100);
+
+            // 1. تحديد أيقونة وحالة النتيجة
+            let icon, title;
+            if (scorePercent >= 90) { icon = '🏆'; title = 'ممتاز!'; }
+            else if (scorePercent >= 75) { icon = '🌟'; title = 'جيد جداً!'; }
+            else if (scorePercent >= 50) { icon = '✅'; title = 'ناجح'; }
+            else { icon = '📚'; title = 'حاول مرة أخرى'; }
+
+            // 2. تحديث الشاشة بالأرقام
+            document.getElementById('resultIcon').textContent = icon;
+            document.getElementById('resultTitle').textContent = title;
+            document.getElementById('resultScore').textContent = scorePercent + '%';
+            document.getElementById('statTotal').textContent = totalQuestions;
+            document.getElementById('statCorrect').textContent = correctCount;
+            document.getElementById('statWrong').textContent = wrongCount;
+            
+            const mins = Math.floor(timeTakenSeconds / 60);
+            const secs = timeTakenSeconds % 60;
+            document.getElementById('statTime').textContent = 
+                `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+
+            // 3. إرسال النتيجة للقناة فوراً (للحفظ في الإحصائيات)
+            sendResultToChannel({
+                exam_id: examData.id,
+                exam_title: examData.title,
+                user_id: examData.user_id,
+                score: scorePercent,
+                correct: correctCount,
+                wrong: wrongCount,
+                total: totalQuestions,
+                time_taken: timeTakenSeconds,
+                timeout: timeout,
+                answers: userAnswers
+            });
+
+            // 4. تخزين البيانات في متغير (في حال قرر الطالب العودة للبوت لاحقاً)
+            finalResultToBot = {
+                exam_id: examData.id,
+                user_id: examData.user_id,
+                score: scorePercent,
+                correct: correctCount,
+                wrong: wrongCount,
+                total: totalQuestions,
+                time_taken: timeTakenSeconds,
+                answers: userAnswers
+            };
+
+            // حفظ محلي لمنع إعادة الامتحان
+            const examKey = `exam_${examData.id}_${examData.user_id}`;
+            localStorage.setItem(examKey, JSON.stringify({
+                score: scorePercent,
+                correct: correctCount,
+                wrong: wrongCount,
+                time: timeTakenSeconds,
+                date: new Date().toISOString()
+            }));
+
+            // 5. عرض شاشة النتيجة (والبقاء فيها)
+            showScreen('resultScreen');
+        }
+
+        // ═══════════════════════════════════════════════════════
+        //                    إرسال للقناة
+        // ═══════════════════════════════════════════════════════
+        
+        function sendResultToChannel(result) {
+            const mins = Math.floor(result.time_taken / 60);
+            const secs = result.time_taken % 60;
+            
+            let statusIcon;
+            if (result.score >= 90) statusIcon = '🏆';
+            else if (result.score >= 75) statusIcon = '🌟';
+            else if (result.score >= 50) statusIcon = '✅';
+            else statusIcon = '❌';
+
+            // إضافة رابط المستخدم هنا
+            const message = `
+📊 نتيجة اختبار جديدة
+━━━━━━━━━━━━━━━━━━
+
+📝 الاختبار: ${result.exam_title}
+👤 المستخدم: <a href="tg://user?id=${result.user_id}">${result.user_id}</a>
+
+━━━━━━━━━━━━━━━━━━
+
+📈 النتيجة: ${result.score}% ${statusIcon}
+✅ صحيح: ${result.correct}
+❌ خطأ: ${result.wrong}
+📋 المجموع: ${result.total}
+
+⏱ الوقت: ${mins}:${String(secs).padStart(2, '0')}
+${result.timeout ? '⚠️ انتهى الوقت!' : ''}
+
+━━━━━━━━━━━━━━━━━━
+#نتيجة_اختبار #exam_${result.exam_id}
+`;
+
+            const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
+            
+            // استخدام fetch بدون انتظار للحفاظ على سرعة الإغلاق
+            fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    chat_id: CHANNEL_ID,
+                    text: message,
+                    parse_mode: 'HTML'
+                })
+            }).catch(e => console.log('Channel send error', e));
+        }
+
+        // ═══════════════════════════════════════════════════════
+        //                    إغلاق التطبيق وإرسال البيانات
+        // ═══════════════════════════════════════════════════════
+        
+        // ═══════════════════════════════════════════════════════
+        //                    إغلاق التطبيق وإرسال البيانات
+        // ═══════════════════════════════════════════════════════
+        
+        // ═══════════════════════════════════════════════════════
+        //                    إغلاق التطبيق وإرسال البيانات (معدلة)
+        // ═══════════════════════════════════════════════════════
+        
+        function closeApp() {
+            // التأكد من أن تيليجرام متاح
+            if (window.Telegram && window.Telegram.WebApp) {
+                const tg = window.Telegram.WebApp;
+                
+                // إذا كانت هناك نتيجة، أرسلها
+                if (finalResultToBot) {
+                    try {
+                        // 1. تحويل البيانات لنص
+                        let dataString = JSON.stringify(finalResultToBot);
+                        
+                        // 2. التحقق من الحجم (تيليجرام يقبل 4096 بايت كحد أقصى)
+                        // نستخدم 4000 كحد آمن
+                        if (dataString.length > 4000) {
+                            // الحجم كبير! نحذف تفاصيل الإجابات ونرسل النتيجة فقط
+                            const smallData = {
+                                ...finalResultToBot,
+                                answers: [] // إفراغ التفاصيل لتقليل الحجم
+                            };
+                            dataString = JSON.stringify(smallData);
+                            // تنبيه المستخدم (اختياري)
+                            // alert("تم حفظ الدرجة فقط نظراً لطول الاختبار");
+                        }
+
+                        // 3. إرسال البيانات للبوت
+                        tg.sendData(dataString);
+                        
+                    } catch (e) {
+                        console.error("Error sending data:", e);
+                        // في حال فشل الإرسال لأي سبب، نغلق التطبيق فوراً
+                        tg.close();
+                    }
+                } else {
+                    // إغلاق عادي (في حال لم يدخل اختبار أو خرج قبل البدء)
+                    tg.close();
+                }
+            } else {
+                // إذا لم يكن داخل تيليجرام
+                window.close();
+                history.back();
+            }
+        }
+
+    </script>
+</body>
+</html>
