@@ -707,7 +707,7 @@
             padding: 0 20px; z-index: 1000;
         }
         .app-title { font-size: 18px; font-weight: bold; color: #667eea; }
-        .menu-btn { background: none; border: none; font-size: 24px; cursor: pointer; color: #333; }
+        .menu-btn { background: none; border: none; font-size: 24px; cursor: pointer; color: #333; display: none; }
         
         /* القائمة المنسدلة */
         .dropdown-menu {
@@ -1252,11 +1252,31 @@
     // ═══════════════════════════════════════════════════════
 
     function showScreen(screenId) {
+        // إخفاء جميع الشاشات أولاً كما في الكود السابق
         document.querySelectorAll('.card, #examScreen').forEach(el => {
             el.classList.add('hidden');
         });
-        document.getElementById(screenId).classList.remove('hidden');
+        
+        // إظهار الشاشة المطلوبة
+        const targetScreen = document.getElementById(screenId);
+        if (targetScreen) targetScreen.classList.remove('hidden');
+
+        // 🔥 التعديل الجديد للتحكم في زر النقاط الثلاث 🔥
+        const menuBtn = document.querySelector('.menu-btn');
+        if (menuBtn) {
+            // إذا كانت الشاشة الحالية هي لوحة الإدارة، أظهر الزر
+            if (screenId === 'adminPanel') {
+                menuBtn.style.display = 'block';
+            } else {
+                // في أي شاشة أخرى (اختبار، نتيجة، الخ)، اخفِ الزر
+                menuBtn.style.display = 'none';
+                // إغلاق القائمة لو كانت مفتوحة عند الخروج
+                const menu = document.getElementById('dropdownMenu');
+                if (menu) menu.classList.remove('show');
+            }
+        }
     }
+
 
     function showNoExamScreen() {
         showScreen('noExamScreen');
