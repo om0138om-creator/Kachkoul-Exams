@@ -57,47 +57,90 @@
             box-sizing: border-box;
         }
 
+        /* تعريف متغيرات الألوان الأساسية */
         :root {
-            --primary: #667eea;
-            --secondary: #764ba2;
-            --bg: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            --card-bg: white;
-            --text-main: #2c3e50;
-            --text-sub: #6c757d;
+            --primary-gradient: linear-gradient(45deg, #FF512F, #DD2476); /* لون الأزرار الأساسي */
+            --bg-main: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); /* خلفية نهارية فاتحة */
+            --card-bg: #ffffff; /* لون البطاقات الأبيض */
+            --text-main: #2c3e50; /* النص الأساسي الداكن */
+            --text-sub: #6c757d; /* النص الفرعي */
+            --input-bg: #f8f9fa; /* خلفية الحقول */
+            --border-color: #eee; /* لون الحدود */
+            --shadow-color: rgba(0,0,0,0.1); /* لون الظل */
+            --accent-glow: transparent; /* لا يوجد توهج في النهار */
         }
 
-        /* 🌙 ألوان الوضع الليلي */
+        /* 🔥 الوضع الليلي الاحترافي 🔥 */
         body.night-mode {
-            --bg: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            --card-bg: #1f1f38;
-            --text-main: #e0e0e0;
-            --text-sub: #b0b0b0;
+            /* خلفية عميقة داكنة جداً */
+            --bg-main: linear-gradient(to bottom, #0f0c29, #302b63, #24243e);
+            /* لون البطاقات يتحول لرمادي مزرق داكن بدلاً من الأبيض */
+            --card-bg: #1a1a2e;
+            /* النصوص تصبح فاتحة */
+            --text-main: #e6e6e6;
+            --text-sub: #a0a0a0;
+            /* الحقول تصبح داكنة لتريح العين */
+            --input-bg: #2a2a4e;
+            --border-color: #444;
+            /* ظل أعمق */
+            --shadow-color: rgba(0,0,0,0.5);
+            /* إضافة لون توهج خفيف (اختياري: يمكن تغييره لأحمر أو أزرق) */
+            --accent-glow: 0 0 15px rgba(102, 126, 234, 0.2);
         }
 
         body {
             font-family: inherit;
-            background: var(--bg);
+            background: var(--bg-main); /* استخدام المتغير الجديد */
             min-height: 100vh;
             padding: 15px;
             padding-top: 80px;
             direction: rtl;
-            transition: background 0.5s ease; /* أنميشن التحول */
+            color: var(--text-main); /* توحيد لون النص */
+            transition: all 0.5s cubic-bezier(0.4, 0.0, 0.2, 1); /* أنميشن تحول سلس جداً */
         }
 
-        .container {
-            max-width: 500px;
-            margin: 0 auto;
-        }
-
-        /* البطاقات */
+        /* تحديث تصميم البطاقات ليتفاعل مع الوضع الليلي */
         .card {
-            background: white;
-            border-radius: 20px;
+            background: var(--card-bg);
             padding: 25px;
-            box-shadow: 0 15px 50px rgba(0,0,0,0.2);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px var(--shadow-color);
             text-align: center;
-            animation: slideUp 0.5s ease;
+            margin-bottom: 20px;
+            /* إضافة حدود خفيفة وتوهج في الوضع الليلي */
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
         }
+        /* تأثير إضافي للبطاقات في الوضع الليلي */
+        body.night-mode .card {
+            box-shadow: var(--accent-glow); /* إضافة التوهج */
+        }
+
+        /* تحديث الحقول (Inputs) لتصبح داكنة في الوضع الليلي */
+        .admin-input, select, .opt-text, .opt-expl {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            font-family: inherit;
+            /* استخدام المتغيرات الجديدة */
+            background: var(--input-bg) !important;
+            color: var(--text-main) !important;
+            transition: 0.3s;
+        }
+        /* تأثير التركيز على الحقول */
+        .admin-input:focus, select:focus {
+            border-color: #FF512F;
+            box-shadow: 0 0 8px rgba(255, 81, 47, 0.3);
+        }
+
+        /* تحديث لون خلفية الهيدر في الوضع الليلي */
+        .app-header {
+            background: var(--card-bg); /* سيصبح داكناً في الليل */
+            /* ... باقي تنسيقات الهيدر كما هي ... */
+        }
+
 
         @keyframes slideUp {
             from { opacity: 0; transform: translateY(30px); }
@@ -708,14 +751,51 @@
         
         
         .theme-toggle { font-size: 22px; cursor: pointer; transition: 0.3s; }
+        /* 🚀 التصميم الجبار لمربع إحصائياتي */
         .stats-card-btn {
-            background: linear-gradient(45deg, #FF512F, #DD2476);
-            color: white; padding: 25px; border-radius: 20px;
-            margin-bottom: 20px; cursor: pointer; text-align: right;
-            transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            background: linear-gradient(45deg, #4facfe 0%, #00f2fe 100%); /* لون نهار حيوي */
+            color: white; 
+            padding: 30px; 
+            border-radius: 25px;
+            margin-bottom: 25px; 
+            cursor: pointer; 
+            text-align: center;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+            border: 3px solid rgba(255,255,255,0.3);
+            position: relative; 
+            overflow: hidden; /* ضروري لتأثير اللمعان */
         }
-        .stats-card-btn:active { transform: scale(0.95); }
+
+        /* 💥 أنميشن الحركة عند الضغط */
+        .stats-card-btn:active {
+            transform: scale(0.9) rotate(-2deg);
+            filter: brightness(1.2);
+        }
+
+        /* ✨ تأثير اللمعان السحري الذي يمر فوق المربع */
+        .stats-card-btn::after {
+            content: ''; 
+            position: absolute; 
+            top: -50%; 
+            left: -50%;
+            width: 200%; 
+            height: 200%; 
+            background: rgba(255,255,255,0.2);
+            transform: rotate(45deg); 
+            transition: 0.6s;
+        }
+        .stats-card-btn:hover::after { 
+            left: 120%; 
+        }
+
+        /* 🔴 شكل المربع في الوضع الليلي الجبار (أحمر نيون) */
+        body.night-mode .stats-card-btn {
+            background: linear-gradient(45deg, #ff003c, #000) !important;
+            border: 2px solid white !important;
+            box-shadow: 0 0 25px rgba(255, 0, 60, 0.6) !important;
+        }
+
         
         /* === تنسيقات الهيدر والقائمة والخطوط (جديد) === */
         .app-header {
@@ -1313,9 +1393,24 @@
 
     function showNoExamScreen() {
         showScreen('noExamScreen');
+        
+        // 🔥 إضافة مربع الإحصائيات الجبار (الإصلاح)
+        const container = document.getElementById('noExamScreen');
+        if (!document.getElementById('statsCard')) {
+            const card = document.createElement('div');
+            card.id = 'statsCard';
+            card.className = 'stats-card-btn'; // سيأخذ التنسيق الجديد
+            card.innerHTML = `
+                <div style="font-size: 40px; margin-bottom: 10px;">📈</div>
+                <h3 style="margin:0; font-size:24px; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">إحصائياتي التعليمية</h3>
+                <p style="margin:8px 0 0 0; opacity: 0.9; font-size:14px; line-height:1.5;">تتبع نجاحك، درجاتك، وما فاتك من اختبارات بدقة ونزاهة..</p>
+            `;
+            card.onclick = openMyStats;
+            container.prepend(card); // يضعه في أول القائمة
+        }
+
         const user = window.Telegram.WebApp.initDataUnsafe?.user;
         if (user && OWNERS.includes(user.id)) {
-            const container = document.getElementById('noExamScreen');
             if (!document.getElementById('adminBtn')) {
                 const btn = document.createElement('button');
                 btn.id = 'adminBtn';
@@ -1327,6 +1422,7 @@
             }
         }
     }
+
 
     // ═══════════════════════════════════════════════════════
     //                    منطق الاختبار
