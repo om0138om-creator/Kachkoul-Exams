@@ -60,20 +60,28 @@
         :root {
             --primary: #667eea;
             --secondary: #764ba2;
-            --success: #27ae60;
-            --danger: #e74c3c;
-            --warning: #f39c12;
-            --dark: #2c3e50;
-            --light: #f8f9fa;
-            --gray: #6c757d;
+            --bg: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --card-bg: white;
+            --text-main: #2c3e50;
+            --text-sub: #6c757d;
+        }
+
+        /* 🌙 ألوان الوضع الليلي */
+        body.night-mode {
+            --bg: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            --card-bg: #1f1f38;
+            --text-main: #e0e0e0;
+            --text-sub: #b0b0b0;
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            font-family: inherit;
+            background: var(--bg);
             min-height: 100vh;
             padding: 15px;
+            padding-top: 80px;
             direction: rtl;
+            transition: background 0.5s ease; /* أنميشن التحول */
         }
 
         .container {
@@ -698,6 +706,17 @@
             justify-content: center;
         }
         
+        
+        .theme-toggle { font-size: 22px; cursor: pointer; transition: 0.3s; }
+        .stats-card-btn {
+            background: linear-gradient(45deg, #FF512F, #DD2476);
+            color: white; padding: 25px; border-radius: 20px;
+            margin-bottom: 20px; cursor: pointer; text-align: right;
+            transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+        .stats-card-btn:active { transform: scale(0.95); }
+        
         /* === تنسيقات الهيدر والقائمة والخطوط (جديد) === */
         .app-header {
             position: fixed; top: 0; left: 0; right: 0;
@@ -744,7 +763,9 @@
     <header class="app-header">
         <div class="menu-btn" onclick="toggleMenu()">⋮</div>
         <div class="app-title">كشكول الفوائد</div>
+        <div class="theme-toggle" id="themeBtn" onclick="toggleNightMode()">🌙</div>
     </header>
+
 
     <div class="dropdown-menu" id="dropdownMenu">
         <div class="dropdown-item" onclick="triggerFontUpload()"><span>🔤</span> تغيير خط الموقع</div>
@@ -776,6 +797,18 @@
                 🔙 العودة للبوت
             </button>
         </div>
+        
+        <div class="card hidden" id="statsScreen">
+            <div style="font-size: 60px; margin-bottom:10px;">📊</div>
+            <h1>سجلي التعليمي</h1>
+            <div class="exam-info">
+                <div class="info-row"><span>✅ اختبارات مكتملة</span><span id="stTaken" class="info-value">0</span></div>
+                <div class="info-row"><span>⏳ اختبارات متبقية</span><span id="stPending" class="info-value">0</span></div>
+                <div class="info-row"><span>🎯 متوسط الدرجات</span><span id="stAvg" class="info-value">0%</span></div>
+            </div>
+            <button class="btn btn-primary btn-block" onclick="showScreen('noExamScreen')">🔙 العودة</button>
+        </div>
+        
 
         <!-- شاشة تم الاختبار مسبقاً -->
         <div class="card hidden" id="alreadyTakenScreen">
@@ -1964,6 +1997,44 @@ ${result.timeout ? '⚠️ انتهى الوقت!' : ''}
             alert("خطأ: " + error.message);
             document.getElementById('loadingScreen').classList.add('hidden');
         });
+    }
+
+
+    function toggleNightMode() {
+        document.body.classList.toggle('night-mode');
+        const isNight = document.body.classList.contains('night-mode');
+        document.getElementById('themeBtn').textContent = isNight ? '☀️' : '🌙';
+        localStorage.setItem('nightMode', isNight);
+    }
+
+    async function openMyStats() {
+        showScreen('statsScreen');
+        let taken = 0, totalScore = 0, takenIds = [];
+        for (let i = 0; i < localStorage.length; i++) {
+            let key = localStorage.key(i);
+            if (key && key.startsWith('exam_')) {
+                taken++;
+                try {
+                    let d = JSON.parse(localStorage.getItem(key));
+                    totalScore += parseFloat(d.score || 0);
+                    takenIds.push(key.split('_')[1]);
+                } catch(e) {}
+            }
+        }
+        document.getElementById('stTaken').textContent = taken;
+        document.getElementById('stAvg').textContent = taken > 0 ? Math.round(totalScore/taken) + "%" : "0%";
+        
+        try {
+            const snap = await db.collection("exams").get();
+            let pending = 0;
+            snap.forEach(doc => { if(!takenIds.includes(doc.id)) pending++; });
+            document.getElementById('stPending').textContent = pending;
+        } catch(e) {}
+    }
+    // استرجاع الوضع المفضل عند التحميل
+    if(localStorage.getItem('nightMode') === 'true') {
+        document.body.classList.add('night-mode');
+        document.getElementById('themeBtn').textContent = '☀️';
     }
 
 
