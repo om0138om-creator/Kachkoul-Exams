@@ -1617,14 +1617,23 @@ ${result.timeout ? '⚠️ انتهى الوقت!' : ''}
         }
 
         // 2. دالة إظهار/إخفاء حقول التعليل
+        // 1. دالة إظهار/إخفاء حقول التعليل (محدثة)
         function toggleExplanationFields() {
             const isChecked = document.getElementById('explanationToggle').checked;
-            const fields = document.querySelectorAll('.explanation-field');
-            fields.forEach(field => {
-                if (isChecked) field.classList.add('active');
-                else field.classList.remove('active');
+            const allExpls = document.querySelectorAll('.opt-expl');
+            
+            allExpls.forEach(input => {
+                if (!isChecked) {
+                    input.style.display = 'none'; // إخفاء الكل فوراً
+                } else {
+                    // إذا كان الزر مفعل، نظهر فقط الحقول التي ليست للإجابة الصحيحة
+                    const row = input.closest('.option-row');
+                    const isCorrect = row.querySelector('input[type="radio"]').checked;
+                    input.style.display = isCorrect ? 'none' : 'block';
+                }
             });
         }
+
 
         // 3. دالة إضافة بطاقة سؤال جديدة
         // ═══════════════════════════════════════════════════════
@@ -1664,29 +1673,54 @@ ${result.timeout ? '⚠️ انتهى الوقت!' : ''}
         }
 
         // دالة مساعدة: إضافة سطر خيار جديد
+        // 1. الدالة المحدثة لإضافة خيار (تراقب التغييرات لإخفاء التعليل)
         function addOption(cardId) {
             const wrapper = document.getElementById(`options_wrapper_${cardId}`);
+            if (!wrapper) return;
             const optCount = wrapper.children.length + 1;
             
             const div = document.createElement('div');
             div.className = 'option-row';
-            // تنسيق السطر ليكون مرتباً
             div.style.cssText = "background: #f8f9fa; padding: 10px; border-radius: 8px; margin-bottom: 8px; border: 1px solid #eee; position: relative;";
             
             div.innerHTML = `
                 <div style="display:flex; align-items:center; gap:8px; margin-bottom:5px;">
-                    <input type="radio" name="rad_${cardId}" value="${optCount}" style="transform:scale(1.2); cursor:pointer;">
+                    <input type="radio" name="rad_${cardId}" value="${optCount}" 
+                           onchange="syncExplVisibility(${cardId})" 
+                           style="transform:scale(1.2); cursor:pointer;">
                     
                     <input type="text" class="admin-input opt-text" placeholder="نص الاختيار" style="flex:1; margin:0;">
                     
                     <button onclick="removeOption(this)" style="background:none; border:none; color:red; cursor:pointer; font-size:20px; padding:0 5px;">×</button>
                 </div>
                 
-                <input type="text" class="admin-input opt-expl" placeholder="💡 تعليل الخطأ (يظهر للطالب إذا اختار هذا الجواب)" style="font-size:12px; background:white; margin-top:5px; margin-bottom:0;">
+                <input type="text" class="admin-input opt-expl" placeholder="💡 تعليل الخطأ (يظهر للطالب إذا اختار هذا الجواب)" 
+                       style="font-size:12px; background:white; margin-top:5px; margin-bottom:0; display:none;">
             `;
             wrapper.appendChild(div);
             
             updateOptionValues(cardId);
+            syncExplVisibility(cardId); // مزامنة الحالة فور الإضافة
+        }
+
+        // 2. دالة المزامنة: تتحكم في ظهور المربع بناءً على (الزر الرئيسي + هل الإجابة صحيحة)
+        function syncExplVisibility(cardId) {
+            const isToggleOn = document.getElementById('explanationToggle').checked;
+            const wrapper = document.getElementById(`options_wrapper_${cardId}`);
+            if (!wrapper) return;
+
+            const rows = wrapper.querySelectorAll('.option-row');
+            rows.forEach(row => {
+                const radio = row.querySelector('input[type="radio"]');
+                const explInput = row.querySelector('.opt-expl');
+                
+                if (!isToggleOn) {
+                    explInput.style.display = 'none'; // مخفي لأن الزر العام مغلق
+                } else {
+                    // يظهر فقط إذا لم يكن هو الخيار المختار كصحيح
+                    explInput.style.display = radio.checked ? 'none' : 'block';
+                }
+            });
         }
 
         // دالة مساعدة: حذف خيار
@@ -1706,15 +1740,25 @@ ${result.timeout ? '⚠️ انتهى الوقت!' : ''}
         }
 
         // دالة مساعدة: إعادة ترتيب أرقام الخيارات بعد الحذف
+        // الدالة المحدثة لإعادة ترتيب الخيارات ومزامنة التعليلات
         function updateOptionValues(cardId) {
             const wrapper = document.getElementById(`options_wrapper_${cardId}`);
+            if (!wrapper) return;
+            
             const rows = wrapper.querySelectorAll('.option-row');
             
             rows.forEach((row, index) => {
                 const radio = row.querySelector('input[type="radio"]');
-                radio.value = index + 1; // يعيد الترتيب 1, 2, 3...
+                // تحديث قيمة الراديو لتظل مرتبة 1, 2, 3...
+                radio.value = index + 1; 
             });
+
+            // 🔥 أهم سطر: مزامنة ظهور التعليلات بناءً على الترتيب الجديد والإجابة المختارة
+            if (typeof syncExplVisibility === 'function') {
+                syncExplVisibility(cardId);
+            }
         }
+
 
 
         // 4. دالة الحفظ وإرسال الاختبار للبوت (نسخة التصحيح)
