@@ -74,53 +74,53 @@
         
         /* --- تنسيقات الشعار والدوران --- */
         /* --- تنسيقات الشعار والدوران (نسخة كبيرة وثابتة) --- */
+        /* --- تنسيقات الشعار (حجم مثالي + دوران مستمر) --- */
         .profile-upload-section {
             display: flex; flex-direction: column; align-items: center;
-            margin-bottom: 30px; /* مسافة أكبر قليلاً */
+            margin-bottom: 25px;
         }
         
-        /* 1. تكبير الحاوية */
+        /* 1. ضبط حجم الحاوية */
         .rotating-circle-container {
             position: relative; 
-            width: 140px; /* تم التكبير من 100 إلى 140 */
-            height: 140px;
+            width: 125px; /* حجم وسط ومناسب جداً */
+            height: 125px;
             cursor: pointer; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center;
+            display: flex; justify-content: center; align-items: center;
         }
 
-        /* 2. تكبير الدائرة نفسها */
+        /* 2. ضبط حجم الدائرة */
         .profile-circle {
-            width: 130px; /* تم التكبير من 90 إلى 130 */
-            height: 130px; 
+            width: 115px; 
+            height: 115px; 
             border-radius: 50%;
-            border: 4px dashed var(--text-sub); /* خط أعرض قليلاً */
+            border: 3px dashed var(--text-sub);
             display: flex; justify-content: center; align-items: center;
             background-size: cover; background-position: center;
-            z-index: 2; transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 2; transition: 0.5s;
         }
         
-        .plus-sign { font-size: 45px; color: var(--text-sub); } /* تكبير علامة الزائد */
+        .plus-sign { font-size: 40px; color: var(--text-sub); }
         
-        /* أنميشن عند وجود صورة */
+        /* ✅ إعادة تفعيل الدوران عند وجود صورة */
         .profile-circle.has-image {
-            border: 4px solid var(--primary);
-            box-shadow: 0 0 25px rgba(0,0,0,0.2);
-            /* قمنا بإلغاء الدوران المستمر ليكون الشعار ثابتاً وواضحاً، 
-               ويمكنك إعادته إذا أردت بحذف التعليق عن السطر التالي */
-            /* animation: slowSpin 30s linear infinite; */
+            border: 3px solid var(--primary);
+            box-shadow: 0 0 20px rgba(0,0,0,0.15);
+            animation: slowSpin 20s linear infinite; /* 🔄 الدوران يعمل الآن! */
         }
         
-        /* تأثير التوهج للحلقة الخلفية */
+        /* الحلقة الخلفية */
         .ring-rotator {
-            position: absolute; top: -5px; left: -5px; right: -5px; bottom: -5px;
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
             border-radius: 50%; border: 2px dashed var(--primary);
             opacity: 0; pointer-events: none;
         }
         .profile-circle.has-image + .ring-rotator {
-            opacity: 0.3; animation: slowSpin 20s linear infinite;
+            opacity: 0.4; animation: slowSpin 15s linear infinite reverse;
         }
+        
+        @keyframes slowSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
         
 
         /* 🌑 الوضع الليلي الجبار (أسود عميق) */
@@ -2479,7 +2479,7 @@ ${result.timeout ? '⚠️ انتهى الوقت!' : ''}
         document.getElementById('imageOverlay').classList.add('hidden'); 
     }
 
-    // الاستماع لرفع الملف + ضغط الصورة (مهم جداً للفايربيس)
+    // الاستماع لرفع الملف + ضغط الصورة + الحفظ الدائم في لوحة التحكم
     window.addEventListener('load', function() {
         const input = document.getElementById('photoInput');
         if(input) {
@@ -2487,20 +2487,22 @@ ${result.timeout ? '⚠️ انتهى الوقت!' : ''}
                 const file = e.target.files[0];
                 if (!file) return;
 
+                // 1. إظهار شاشة التحميل
+                document.getElementById('loadingScreen').classList.remove('hidden');
+
                 const reader = new FileReader();
                 reader.onload = function(event) {
                     const img = new Image();
                     img.src = event.target.result;
                     img.onload = function() {
-                        // إنشاء كانفاس لضغط الصورة (تصغيرها لـ 300 بكسل)
+                        // ضغط الصورة
                         const canvas = document.createElement('canvas');
                         const ctx = canvas.getContext('2d');
-                        const maxSize = 300; // حجم مناسب جداً للأيقونة
+                        const maxSize = 350; // حجم مناسب
                         
                         let width = img.width;
                         let height = img.height;
                         
-                        // حساب الأبعاد الجديدة للحفاظ على التناسب
                         if (width > height) {
                             if (width > maxSize) { height *= maxSize / width; width = maxSize; }
                         } else {
@@ -2511,17 +2513,36 @@ ${result.timeout ? '⚠️ انتهى الوقت!' : ''}
                         canvas.height = height;
                         ctx.drawImage(img, 0, 0, width, height);
                         
-                        // تحويل الصورة لنص مضغوط (JPEG 0.7)
-                        const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
                         
-                        // 1. الحفظ في المتغير (لإرساله للسحابة لاحقاً)
+                        // تحديث المتغير (للاستخدام الحالي)
                         currentExamLogo = dataUrl;
-                        
-                        // 2. العرض في الدائرة
-                        const circle = document.getElementById('profileCircle');
-                        circle.style.backgroundImage = `url('${dataUrl}')`;
-                        circle.classList.add('has-image');
-                        document.getElementById('uploadPlaceholder').style.display = 'none';
+
+                        // 2. الحفظ في Firebase (لتبقى الصورة ثابتة دائماً)
+                        if (typeof db !== 'undefined') {
+                            db.collection('settings').doc('dashboard_config').set({
+                                adminLogo: dataUrl,
+                                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                            }, { merge: true }).then(() => {
+                                document.getElementById('loadingScreen').classList.add('hidden');
+                                alert("✅ تم تحديث شعار لوحة التحكم وحفظه للجميع!");
+                                // تطبيق الصورة فوراً
+                                const circle = document.getElementById('profileCircle');
+                                circle.style.backgroundImage = `url('${dataUrl}')`;
+                                circle.classList.add('has-image');
+                                document.getElementById('uploadPlaceholder').style.display = 'none';
+                            }).catch(err => {
+                                console.error(err);
+                                document.getElementById('loadingScreen').classList.add('hidden');
+                                alert("❌ حدث خطأ في الحفظ، لكن تم وضع الصورة مؤقتاً.");
+                            });
+                        } else {
+                            // احتياطي في حال عدم اتصال قاعدة البيانات
+                            const circle = document.getElementById('profileCircle');
+                            circle.style.backgroundImage = `url('${dataUrl}')`;
+                            circle.classList.add('has-image');
+                            document.getElementById('loadingScreen').classList.add('hidden');
+                        }
                     }
                 }
                 reader.readAsDataURL(file);
@@ -2529,7 +2550,6 @@ ${result.timeout ? '⚠️ انتهى الوقت!' : ''}
         }
     });
 </script>
-
 <div id="imageOverlay" class="image-overlay hidden" onclick="closeOverlay()">
     <img id="expandedImage" src="" alt="تكبير">
 </div>
