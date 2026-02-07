@@ -59,93 +59,132 @@
 
         /* تعريف متغيرات الألوان الأساسية */
         /* 🎨 تعريف الألوان لجميع الأوضاع */
+        /* 1. تعريف الألوان (تم تعديل الخلفية لتكون صلبة بدون تدرج) */
         :root {
             --primary: #FF512F;
             --secondary: #DD2476;
-            --bg: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            --card-bg: #ffffff;
+            --bg: #ffffff; /* ⬜ خلفية بيضاء نقية للنهار */
+            --card-bg: transparent; /* جعل البطاقات شفافة لتندمج مع الخلفية */
+            --element-bg: #f8f9fa; /* لون للخلفيات الفرعية مثل الحقول */
             --text-main: #2c3e50;
             --text-sub: #6c757d;
             --input-bg: #f8f9fa;
             --border: #eee;
         }
 
-        /* 🌑 الوضع الليلي الجبار (نسخة الإصلاح الكامل) */
+        /* 🌑 الوضع الليلي الجبار (أسود عميق) */
         body.night-mode {
-            --bg: #050505;
-            --card-bg: #121212;
+            --bg: #000000; /* ⬛ أسود ملكي */
+            --card-bg: transparent;
+            --element-bg: #121212; /* لون العناصر في الليل */
             --text-main: #ffffff;
             --text-sub: #ff4d4d;
             --primary: #ff003c;
             --secondary: #990024;
             --input-bg: #1a1a1a;
-            --border: #ff003c;
+            --border: #333;
         }
 
+        /* 2. إعدادات الجسم (ملء الشاشة وإلغاء الحواف) */
         body {
             font-family: inherit;
-            background: var(--bg);
+            background-color: var(--bg);
+            background-image: none !important; /* 🚫 إلغاء التدرج الرمادي */
             min-height: 100vh;
-            padding: 15px;
-            padding-top: 80px;
+            margin: 0;
+            padding: 0;
+            padding-top: 70px; /* مسافة للهيدر */
             direction: rtl;
             color: var(--text-main);
             transition: 0.5s ease;
+            display: flex;
+            flex-direction: column;
         }
 
-        /* 🚀 إجبار جميع البطاقات والمربعات على التغير */
-        .card, .action-card, .toggle-container, .question-card, .timer-container {
-            background: var(--card-bg) !important;
-            color: var(--text-main) !important;
+        /* 3. حاوية المحتوى (توسيط ذكي) */
+        .container {
+            flex: 1; /* يأخذ باقي مساحة الشاشة */
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* 4. تحويل "المربع" إلى واجهة كاملة (إلغاء الحدود والظلال) */
+        .card {
+            background: transparent !important; /* شفاف */
+            box-shadow: none !important; /* بدون ظل */
+            border: none !important; /* بدون حدود */
+            flex: 1; /* يمتد ليملأ الطول */
+            display: flex;
+            flex-direction: column;
+            align-items: center; /* 🎯 توسيط أفقي */
+            justify-content: center; /* 🎯 توسيط عمودي */
+            width: 100%;
+        }
+
+        /* استثناء: البطاقات التي تحتاج خلفية (مثل الأسئلة ولوحة التحكم) */
+        .question-card, .action-card, .timer-container, .edit-card {
+            background: var(--element-bg) !important;
             border: 1px solid var(--border) !important;
-            transition: 0.3s;
+            border-radius: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05) !important;
+            width: 100%; /* عرض كامل */
+            margin-bottom: 20px;
+            display: block; /* إلغاء توسيط المحتوى الداخلي لهذه البطاقات */
+        }
+        
+        /* الوضع الليلي للعناصر المميزة */
+        body.night-mode .question-card, 
+        body.night-mode .action-card,
+        body.night-mode .timer-container {
+            background: #121212 !important;
+            border: 1px solid #ff003c !important; /* برواز أحمر نيون */
+            box-shadow: 0 0 15px rgba(255, 0, 60, 0.15) !important;
         }
 
-        /* إصلاح النصوص الفرعية والعناوين */
+        /* إصلاح النصوص */
         h1, h2, h3, p, label, .info-value, .dropdown-item {
             color: var(--text-main) !important;
         }
-
         .subtitle, .info-label, .question-counter {
             color: var(--text-sub) !important;
         }
 
-        /* ✍️ إصلاح حقول الإدخال والقوائم */
+        /* ✍️ إصلاح حقول الإدخال */
         .admin-input, select, textarea, .opt-text, .opt-expl {
             background: var(--input-bg) !important;
             color: var(--text-main) !important;
             border: 1px solid var(--border) !important;
+            border-radius: 12px;
+        }
+        
+        /* تأثير التركيز */
+        .admin-input:focus, select:focus {
+            border-color: var(--primary) !important;
+            box-shadow: 0 0 10px rgba(255, 81, 47, 0.2);
         }
 
-        /* 🔘 إصلاح الأزرار (أبيض في النهار / أحمر نيون في الليل) */
+        /* 🔘 الأزرار */
         .btn-primary {
             background: linear-gradient(135deg, var(--primary), var(--secondary)) !important;
             color: white !important;
-            box-shadow: 0 5px 15px rgba(255, 81, 47, 0.4);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
             border: none !important;
         }
-
-        body.night-mode .btn-primary {
-            box-shadow: 0 0 20px rgba(255, 0, 60, 0.6);
-        }
-
-        /* المربع الجبار للإحصائيات */
+        
+        /* 📊 المربع الجبار للإحصائيات */
         .stats-card-btn {
             background: linear-gradient(45deg, #4facfe 0%, #00f2fe 100%);
-            color: white !important;
-            border: 2px solid rgba(255,255,255,0.3) !important;
+            border: 2px solid rgba(255,255,255,0.5) !important;
         }
-
+        
         body.night-mode .stats-card-btn {
             background: linear-gradient(45deg, #ff003c, #000) !important;
             border: 2px solid #ff003c !important;
             box-shadow: 0 0 25px rgba(255, 0, 60, 0.5) !important;
-        }
-
-        /* تأثير التركيز على الحقول */
-        .admin-input:focus, select:focus {
-            border-color: #FF512F;
-            box-shadow: 0 0 8px rgba(255, 81, 47, 0.3);
         }
 
         /* تحديث لون خلفية الهيدر في الوضع الليلي */
