@@ -73,50 +73,54 @@
         }
         
         /* --- تنسيقات الشعار والدوران --- */
+        /* --- تنسيقات الشعار والدوران (نسخة كبيرة وثابتة) --- */
         .profile-upload-section {
             display: flex; flex-direction: column; align-items: center;
-            margin-bottom: 20px;
+            margin-bottom: 30px; /* مسافة أكبر قليلاً */
         }
+        
+        /* 1. تكبير الحاوية */
         .rotating-circle-container {
-            position: relative; width: 100px; height: 100px;
-            cursor: pointer; display: flex; justify-content: center; align-items: center;
+            position: relative; 
+            width: 140px; /* تم التكبير من 100 إلى 140 */
+            height: 140px;
+            cursor: pointer; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center;
         }
+
+        /* 2. تكبير الدائرة نفسها */
         .profile-circle {
-            width: 90px; height: 90px; border-radius: 50%;
-            border: 3px dashed var(--text-sub);
+            width: 130px; /* تم التكبير من 90 إلى 130 */
+            height: 130px; 
+            border-radius: 50%;
+            border: 4px dashed var(--text-sub); /* خط أعرض قليلاً */
             display: flex; justify-content: center; align-items: center;
             background-size: cover; background-position: center;
-            z-index: 2; transition: 0.3s;
+            z-index: 2; transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-        .plus-sign { font-size: 35px; color: var(--text-sub); }
+        
+        .plus-sign { font-size: 45px; color: var(--text-sub); } /* تكبير علامة الزائد */
         
         /* أنميشن عند وجود صورة */
         .profile-circle.has-image {
-            border: 3px solid var(--primary);
-            animation: slowSpin 20s linear infinite;
-            box-shadow: 0 0 15px rgba(0,0,0,0.1);
-        }
-        @keyframes slowSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-
-        /* الشعار في شاشة الطالب */
-        .exam-logo-display {
-            margin-bottom: 20px;
-            animation: bounce 2s infinite;
-        }
-        .exam-logo-display img {
-            width: 110px; height: 110px; border-radius: 50%;
             border: 4px solid var(--primary);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-            object-fit: cover;
+            box-shadow: 0 0 25px rgba(0,0,0,0.2);
+            /* قمنا بإلغاء الدوران المستمر ليكون الشعار ثابتاً وواضحاً، 
+               ويمكنك إعادته إذا أردت بحذف التعليق عن السطر التالي */
+            /* animation: slowSpin 30s linear infinite; */
         }
-
-        /* شاشة التكبير */
-        .image-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9); z-index: 9999;
-            display: flex; justify-content: center; align-items: center;
+        
+        /* تأثير التوهج للحلقة الخلفية */
+        .ring-rotator {
+            position: absolute; top: -5px; left: -5px; right: -5px; bottom: -5px;
+            border-radius: 50%; border: 2px dashed var(--primary);
+            opacity: 0; pointer-events: none;
         }
-        .image-overlay img { max-width: 90%; max-height: 80%; border-radius: 10px; }
+        .profile-circle.has-image + .ring-rotator {
+            opacity: 0.3; animation: slowSpin 20s linear infinite;
+        }
         
 
         /* 🌑 الوضع الليلي الجبار (أسود عميق) */
@@ -1389,20 +1393,35 @@
     // ═══════════════════════════════════════════════════════
     
     document.addEventListener('DOMContentLoaded', function() {
+        // ---------------------------------------------------------
+        // 1. 🖼️ تحميل شعار لوحة التحكم (الجديد)
+        // هذا الجزء يستمع لقاعدة البيانات ويحدث الصورة فوراً عند أي تغيير
+        // ---------------------------------------------------------
+        if (typeof db !== 'undefined') {
+            db.collection('settings').doc('dashboard_config').onSnapshot((doc) => {
+                if (doc.exists && doc.data().adminLogo) {
+                    // دالة تطبيق الشعار التي أضفناها سابقاً
+                    applyDashboardLogo(doc.data().adminLogo);
+                }
+            });
+        }
+
+        // ---------------------------------------------------------
+        // 2. ⚙️ معالجة الأقسام واختبارات البوت (القديم)
+        // ---------------------------------------------------------
         const urlParams = new URLSearchParams(window.location.search);
         
-        // 1. إذا وجدنا كلمة 'cats' في الرابط (جاي من البوت لإنشاء اختبار)
+        // أ. إذا وجدنا كلمة 'cats' في الرابط (جاي من البوت لإنشاء اختبار)
         if (urlParams.has('cats')) {
             console.log("🛠️ وضع الإنشاء: تم اكتشاف بيانات جديدة.");
             // نستخدم الدالة الجديدة التي تفك التشفير + تحفظ في السحابة
             if (typeof loadAndSyncCategories === 'function') {
                 loadAndSyncCategories(); 
             } else {
-                // احتياط في حال كان الاسم القديم لا يزال موجوداً
                 try { loadCategoriesFromURL(); } catch(e) {}
             }
         } 
-        // 2. الوضع العادي (فتح التطبيق أو عرض اختبار)
+        // ب. الوضع العادي (فتح التطبيق أو عرض اختبار)
         else {
             // محاولة جلب الأقسام المحفوظة من السحابة (لتعمل القائمة دائماً)
             if (typeof fetchCategoriesFromCloud === 'function') {
@@ -1413,6 +1432,7 @@
             setTimeout(loadExamData, 500);
         }
     });
+
 
 
     async function loadExamData() {
