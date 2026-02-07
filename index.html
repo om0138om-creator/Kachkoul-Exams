@@ -1557,24 +1557,39 @@
         showScreen('noExamScreen');
         const container = document.getElementById('noExamScreen');
         
-        // مسح المحتوى القديم لمنع التكرار
-        const oldCards = container.querySelectorAll('.stats-card-btn, .my-exams-btn');
-        oldCards.forEach(c => c.remove());
+        // 1. تنظيف العناصر القديمة (بما فيها زر الأدمن لمنع التكرار)
+        const oldItems = container.querySelectorAll('.stats-card-btn, .my-exams-btn, #adminBtn');
+        oldItems.forEach(item => item.remove());
 
-        // 1. مربع الإحصائيات (متوسط)
+        // 2. زر سجل اختباراتي (في المنتصف)
+        const examsCard = document.createElement('div');
+        examsCard.className = 'my-exams-btn';
+        examsCard.innerHTML = `<div style="font-size:30px">📋</div><h3 style="margin:0">سجل اختباراتي</h3><p style="font-size:12px; opacity:0.8; margin-top:5px">راجع نتائجك السابقة</p>`;
+        examsCard.onclick = openMyExams;
+        container.prepend(examsCard);
+
+        // 3. زر إحصائياتي (في المنتصف)
         const statsCard = document.createElement('div');
         statsCard.className = 'stats-card-btn';
         statsCard.innerHTML = `<div style="font-size:30px">📊</div><h3 style="margin:0">إحصائياتي</h3>`;
         statsCard.onclick = openMyStats;
-        
-        // 2. مربع اختباراتي (متوسط)
-        const examsCard = document.createElement('div');
-        examsCard.className = 'my-exams-btn';
-        examsCard.innerHTML = `<div style="font-size:30px">📋</div><h3 style="margin:0">سجل اختباراتي</h3>`;
-        examsCard.onclick = openMyExams;
-
-        container.prepend(examsCard);
         container.prepend(statsCard);
+
+        // 🔥 4. استعادة زر لوحة التحكم (يظهر لك أنت فقط) 🔥
+        const user = window.Telegram.WebApp.initDataUnsafe?.user;
+        // تأكد أن الآي دي الخاص بك موجود في مصفوفة OWNERS في أعلى الملف
+        if (user && OWNERS.includes(user.id)) {
+            const adminBtn = document.createElement('button');
+            adminBtn.id = 'adminBtn';
+            adminBtn.className = 'btn btn-success btn-block';
+            adminBtn.style.marginTop = '25px';
+            adminBtn.style.boxShadow = '0 10px 20px rgba(39, 174, 96, 0.3)'; // ظل أخضر فخم
+            adminBtn.innerHTML = '🛠️ لوحة التحكم (إنشاء اختبار)';
+            adminBtn.onclick = () => showScreen('adminPanel');
+            
+            // إضافة الزر في نهاية القائمة
+            container.appendChild(adminBtn);
+        }
     }
 
 
