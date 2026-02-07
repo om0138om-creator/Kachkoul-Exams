@@ -790,10 +790,55 @@
         }
 
         /* 🔴 شكل المربع في الوضع الليلي الجبار (أحمر نيون) */
+        /* 🌑 الوضع الليلي الجبار المطور (إصلاح تباين النصوص) */
+        body.night-mode {
+            --bg: #050505;
+            --card-bg: #121212;
+            --text-main: #ffffff;
+            --text-sub: #ff4d4d;
+            --border-glow: 0 0 15px rgba(255, 0, 60, 0.4);
+            --primary: #ff003c;
+            --secondary: #990024;
+            --input-bg: #1a1a1a;
+        }
+
+        /* 🚀 إجبار جميع الأزرار والنصوص على التغير في الوضع الليلي */
+        body.night-mode .card, 
+        body.night-mode .app-header, 
+        body.night-mode .admin-input,
+        body.night-mode select,
+        body.night-mode textarea {
+            background: var(--card-bg) !important;
+            color: var(--text-main) !important;
+            border-color: var(--primary) !important;
+        }
+
+        /* إصلاح نصوص الأزرار (كانت تظهر بالأسود) */
+        body.night-mode .btn-outline,
+        body.night-mode .info-label,
+        body.night-mode .subtitle,
+        body.night-mode h1, body.night-mode h2 {
+            color: var(--text-main) !important;
+        }
+
+        /* زر العودة للبوت (إصلاح الشفافية واللون) */
+        body.night-mode .btn-primary {
+            background: linear-gradient(135deg, #ff003c, #000) !important;
+            color: white !important;
+            border: 1px solid white !important;
+            box-shadow: 0 5px 15px rgba(255, 0, 60, 0.4);
+        }
+
+        /* حقول الإدخال في الوضع الليلي */
+        body.night-mode .admin-input::placeholder {
+            color: #666 !important;
+        }
+
+        /* 📊 المربع الكبير للإحصائيات (تنسيق فيفيد أحمر) */
         body.night-mode .stats-card-btn {
             background: linear-gradient(45deg, #ff003c, #000) !important;
-            border: 2px solid white !important;
-            box-shadow: 0 0 25px rgba(255, 0, 60, 0.6) !important;
+            border: 3px solid #ff003c !important;
+            box-shadow: 0 0 30px rgba(255, 0, 60, 0.6) !important;
         }
 
         
