@@ -58,77 +58,90 @@
         }
 
         /* تعريف متغيرات الألوان الأساسية */
+        /* 🎨 تعريف الألوان لجميع الأوضاع */
         :root {
-            --primary-gradient: linear-gradient(45deg, #FF512F, #DD2476); /* لون الأزرار الأساسي */
-            --bg-main: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); /* خلفية نهارية فاتحة */
-            --card-bg: #ffffff; /* لون البطاقات الأبيض */
-            --text-main: #2c3e50; /* النص الأساسي الداكن */
-            --text-sub: #6c757d; /* النص الفرعي */
-            --input-bg: #f8f9fa; /* خلفية الحقول */
-            --border-color: #eee; /* لون الحدود */
-            --shadow-color: rgba(0,0,0,0.1); /* لون الظل */
-            --accent-glow: transparent; /* لا يوجد توهج في النهار */
+            --primary: #FF512F;
+            --secondary: #DD2476;
+            --bg: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            --card-bg: #ffffff;
+            --text-main: #2c3e50;
+            --text-sub: #6c757d;
+            --input-bg: #f8f9fa;
+            --border: #eee;
         }
 
-        /* 🔥 الوضع الليلي الاحترافي 🔥 */
+        /* 🌑 الوضع الليلي الجبار (نسخة الإصلاح الكامل) */
         body.night-mode {
-            /* خلفية عميقة داكنة جداً */
-            --bg-main: linear-gradient(to bottom, #0f0c29, #302b63, #24243e);
-            /* لون البطاقات يتحول لرمادي مزرق داكن بدلاً من الأبيض */
-            --card-bg: #1a1a2e;
-            /* النصوص تصبح فاتحة */
-            --text-main: #e6e6e6;
-            --text-sub: #a0a0a0;
-            /* الحقول تصبح داكنة لتريح العين */
-            --input-bg: #2a2a4e;
-            --border-color: #444;
-            /* ظل أعمق */
-            --shadow-color: rgba(0,0,0,0.5);
-            /* إضافة لون توهج خفيف (اختياري: يمكن تغييره لأحمر أو أزرق) */
-            --accent-glow: 0 0 15px rgba(102, 126, 234, 0.2);
+            --bg: #050505;
+            --card-bg: #121212;
+            --text-main: #ffffff;
+            --text-sub: #ff4d4d;
+            --primary: #ff003c;
+            --secondary: #990024;
+            --input-bg: #1a1a1a;
+            --border: #ff003c;
         }
 
         body {
             font-family: inherit;
-            background: var(--bg-main); /* استخدام المتغير الجديد */
+            background: var(--bg);
             min-height: 100vh;
             padding: 15px;
             padding-top: 80px;
             direction: rtl;
-            color: var(--text-main); /* توحيد لون النص */
-            transition: all 0.5s cubic-bezier(0.4, 0.0, 0.2, 1); /* أنميشن تحول سلس جداً */
+            color: var(--text-main);
+            transition: 0.5s ease;
         }
 
-        /* تحديث تصميم البطاقات ليتفاعل مع الوضع الليلي */
-        .card {
-            background: var(--card-bg);
-            padding: 25px;
-            border-radius: 20px;
-            box-shadow: 0 10px 30px var(--shadow-color);
-            text-align: center;
-            margin-bottom: 20px;
-            /* إضافة حدود خفيفة وتوهج في الوضع الليلي */
-            border: 1px solid var(--border-color);
-            transition: all 0.3s ease;
-        }
-        /* تأثير إضافي للبطاقات في الوضع الليلي */
-        body.night-mode .card {
-            box-shadow: var(--accent-glow); /* إضافة التوهج */
-        }
-
-        /* تحديث الحقول (Inputs) لتصبح داكنة في الوضع الليلي */
-        .admin-input, select, .opt-text, .opt-expl {
-            width: 100%;
-            padding: 12px;
-            margin-bottom: 10px;
-            border: 1px solid var(--border-color);
-            border-radius: 10px;
-            font-family: inherit;
-            /* استخدام المتغيرات الجديدة */
-            background: var(--input-bg) !important;
+        /* 🚀 إجبار جميع البطاقات والمربعات على التغير */
+        .card, .action-card, .toggle-container, .question-card, .timer-container {
+            background: var(--card-bg) !important;
             color: var(--text-main) !important;
+            border: 1px solid var(--border) !important;
             transition: 0.3s;
         }
+
+        /* إصلاح النصوص الفرعية والعناوين */
+        h1, h2, h3, p, label, .info-value, .dropdown-item {
+            color: var(--text-main) !important;
+        }
+
+        .subtitle, .info-label, .question-counter {
+            color: var(--text-sub) !important;
+        }
+
+        /* ✍️ إصلاح حقول الإدخال والقوائم */
+        .admin-input, select, textarea, .opt-text, .opt-expl {
+            background: var(--input-bg) !important;
+            color: var(--text-main) !important;
+            border: 1px solid var(--border) !important;
+        }
+
+        /* 🔘 إصلاح الأزرار (أبيض في النهار / أحمر نيون في الليل) */
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--secondary)) !important;
+            color: white !important;
+            box-shadow: 0 5px 15px rgba(255, 81, 47, 0.4);
+            border: none !important;
+        }
+
+        body.night-mode .btn-primary {
+            box-shadow: 0 0 20px rgba(255, 0, 60, 0.6);
+        }
+
+        /* المربع الجبار للإحصائيات */
+        .stats-card-btn {
+            background: linear-gradient(45deg, #4facfe 0%, #00f2fe 100%);
+            color: white !important;
+            border: 2px solid rgba(255,255,255,0.3) !important;
+        }
+
+        body.night-mode .stats-card-btn {
+            background: linear-gradient(45deg, #ff003c, #000) !important;
+            border: 2px solid #ff003c !important;
+            box-shadow: 0 0 25px rgba(255, 0, 60, 0.5) !important;
+        }
+
         /* تأثير التركيز على الحقول */
         .admin-input:focus, select:focus {
             border-color: #FF512F;
