@@ -765,25 +765,67 @@
         
         .theme-toggle { font-size: 22px; cursor: pointer; transition: 0.3s; }
         /* 🚀 التصميم الجبار لمربع إحصائياتي */
-        .stats-card-btn {
-            background: linear-gradient(45deg, #4facfe 0%, #00f2fe 100%); /* لون نهار حيوي */
-            color: white; 
-            padding: 30px; 
+        /* 🚀 التصميم الجبار والموسط للأزرار الكبيرة */
+        .stats-card-btn, .my-exams-btn {
+            background: linear-gradient(45deg, #4facfe 0%, #00f2fe 100%);
+            color: white !important; 
+            padding: 25px; 
             border-radius: 25px;
-            margin-bottom: 25px; 
+            margin-bottom: 20px; 
             cursor: pointer; 
-            text-align: center;
+            text-align: center; /* 🎯 التوسيط المطلوب */
             transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
-            border: 3px solid rgba(255,255,255,0.3);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            border: 2px solid rgba(255,255,255,0.3);
             position: relative; 
-            overflow: hidden; /* ضروري لتأثير اللمعان */
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
         }
 
-        /* 💥 أنميشن الحركة عند الضغط */
-        .stats-card-btn:active {
-            transform: scale(0.9) rotate(-2deg);
-            filter: brightness(1.2);
+        /* لون مختلف لزر اختباراتي لتمييزه */
+        .my-exams-btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+        }
+
+        /* أنميشن الحركة عند الضغط (اهتزاز احترافي) */
+        .stats-card-btn:active, .my-exams-btn:active {
+            transform: scale(0.92) rotate(-1deg);
+            filter: brightness(1.1);
+        }
+
+        /* ✨ تأثير اللمعان السحري */
+        .stats-card-btn::after, .my-exams-btn::after {
+            content: ''; position: absolute; top: -50%; left: -50%;
+            width: 200%; height: 200%; background: rgba(255,255,255,0.15);
+            transform: rotate(45deg); transition: 0.6s;
+        }
+        .stats-card-btn:hover::after, .my-exams-btn:hover::after { left: 120%; }
+
+        /* 🔄 زر "إعادة الاختبار" الاحترافي جداً */
+        .retake-btn {
+            background: linear-gradient(45deg, #f093fb 0%, #f5576c 100%);
+            color: white !important;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 15px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(245, 87, 108, 0.4);
+            transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            margin-top: 10px;
+        }
+        .retake-btn:active { transform: scale(0.9); }
+
+        /* 🔴 تعديلات الوضع الليلي للأزرار الجديدة */
+        body.night-mode .stats-card-btn, 
+        body.night-mode .my-exams-btn {
+            background: linear-gradient(45deg, #ff003c, #000) !important;
+            border: 2px solid #ff003c !important;
+            box-shadow: 0 0 20px rgba(255, 0, 60, 0.5) !important;
         }
 
         /* ✨ تأثير اللمعان السحري الذي يمر فوق المربع */
@@ -937,15 +979,38 @@
         </div>
         
         <div class="card hidden" id="statsScreen">
-            <div style="font-size: 60px; margin-bottom:10px;">📊</div>
-            <h1>سجلي التعليمي</h1>
-            <div class="exam-info">
-                <div class="info-row"><span>✅ اختبارات مكتملة</span><span id="stTaken" class="info-value">0</span></div>
-                <div class="info-row"><span>⏳ اختبارات متبقية</span><span id="stPending" class="info-value">0</span></div>
-                <div class="info-row"><span>🎯 متوسط الدرجات</span><span id="stAvg" class="info-value">0%</span></div>
+            <div style="font-size: 70px; margin-bottom: 15px;">📊</div>
+            <h1 style="text-align: center;">سجلي التعليمي</h1>
+            <p class="subtitle" style="text-align: center;">ملخص أدائك وتقدمك في المنصة</p>
+            
+            <div class="exam-info" style="background: var(--input-bg); border: 1px solid var(--border); border-radius: 20px;">
+                <div class="info-row" style="flex-direction: column; gap: 5px; padding: 15px;">
+                    <span class="info-label">✅ اختبارات مكتملة</span>
+                    <span id="stTaken" class="info-value" style="font-size: 24px;">0</span>
+                </div>
+                <div class="info-row" style="flex-direction: column; gap: 5px; padding: 15px;">
+                    <span class="info-label">⏳ اختبارات متبقية</span>
+                    <span id="stPending" class="info-value" style="font-size: 24px;">0</span>
+                </div>
+                <div class="info-row" style="flex-direction: column; gap: 5px; padding: 15px; border-bottom: none;">
+                    <span class="info-label">🎯 متوسط الدرجات</span>
+                    <span id="stAvg" class="info-value" style="font-size: 24px;">0%</span>
+                </div>
             </div>
-            <button class="btn btn-primary btn-block" onclick="showScreen('noExamScreen')">🔙 العودة</button>
+            <button class="btn btn-primary btn-block" onclick="showScreen('noExamScreen')">🔙 العودة للرئيسية</button>
         </div>
+
+        <div class="card hidden" id="myExamsScreen">
+            <div style="font-size: 70px; margin-bottom: 15px;">📋</div>
+            <h1 style="text-align: center;">سجل اختباراتي</h1>
+            <p class="subtitle" style="text-align: center;">راجع نتائجك وأخطاءك السابقة</p>
+            
+            <div id="examsHistoryList" style="text-align: right; max-height: 400px; overflow-y: auto; margin: 20px 0; padding: 5px;">
+                </div>
+
+            <button class="btn btn-primary btn-block" onclick="showScreen('noExamScreen')">🔙 العودة للرئيسية</button>
+        </div>
+
         
 
         <!-- شاشة تم الاختبار مسبقاً -->
@@ -1451,34 +1516,26 @@
 
     function showNoExamScreen() {
         showScreen('noExamScreen');
-        
-        // 🔥 إضافة مربع الإحصائيات الجبار (الإصلاح)
         const container = document.getElementById('noExamScreen');
-        if (!document.getElementById('statsCard')) {
-            const card = document.createElement('div');
-            card.id = 'statsCard';
-            card.className = 'stats-card-btn'; // سيأخذ التنسيق الجديد
-            card.innerHTML = `
-                <div style="font-size: 40px; margin-bottom: 10px;">📈</div>
-                <h3 style="margin:0; font-size:24px; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">إحصائياتي التعليمية</h3>
-                <p style="margin:8px 0 0 0; opacity: 0.9; font-size:14px; line-height:1.5;">تتبع نجاحك، درجاتك، وما فاتك من اختبارات بدقة ونزاهة..</p>
-            `;
-            card.onclick = openMyStats;
-            container.prepend(card); // يضعه في أول القائمة
-        }
+        
+        // مسح المحتوى القديم لمنع التكرار
+        const oldCards = container.querySelectorAll('.stats-card-btn, .my-exams-btn');
+        oldCards.forEach(c => c.remove());
 
-        const user = window.Telegram.WebApp.initDataUnsafe?.user;
-        if (user && OWNERS.includes(user.id)) {
-            if (!document.getElementById('adminBtn')) {
-                const btn = document.createElement('button');
-                btn.id = 'adminBtn';
-                btn.className = 'btn btn-success btn-block';
-                btn.style.marginTop = '20px';
-                btn.innerHTML = '🛠️ لوحة التحكم (إنشاء اختبار)';
-                btn.onclick = () => showScreen('adminPanel');
-                container.appendChild(btn);
-            }
-        }
+        // 1. مربع الإحصائيات (متوسط)
+        const statsCard = document.createElement('div');
+        statsCard.className = 'stats-card-btn';
+        statsCard.innerHTML = `<div style="font-size:30px">📊</div><h3 style="margin:0">إحصائياتي</h3>`;
+        statsCard.onclick = openMyStats;
+        
+        // 2. مربع اختباراتي (متوسط)
+        const examsCard = document.createElement('div');
+        examsCard.className = 'my-exams-btn';
+        examsCard.innerHTML = `<div style="font-size:30px">📋</div><h3 style="margin:0">سجل اختباراتي</h3>`;
+        examsCard.onclick = openMyExams;
+
+        container.prepend(examsCard);
+        container.prepend(statsCard);
     }
 
 
@@ -2191,6 +2248,60 @@ ${result.timeout ? '⚠️ انتهى الوقت!' : ''}
         document.getElementById('themeBtn').textContent = '☀️';
     }
 
+    // === دالة فتح سجل الاختبارات ===
+    async function openMyExams() {
+        showScreen('myExamsScreen');
+        const listContainer = document.getElementById('examsHistoryList');
+        listContainer.innerHTML = '<div style="text-align:center">جاري جلب السجل...</div>';
+
+        setTimeout(() => {
+            listContainer.innerHTML = '';
+            let hasExams = false;
+            for (let i = 0; i < localStorage.length; i++) {
+                let key = localStorage.key(i);
+                if (key && key.startsWith('exam_')) {
+                    hasExams = true;
+                    try {
+                        const data = JSON.parse(localStorage.getItem(key));
+                        const examId = key.split('_')[1];
+                        
+                        const item = document.createElement('div');
+                        item.className = 'card'; // سيأخذ ألوان الوضع الليلي تلقائياً
+                        item.style.marginBottom = "15px";
+                        item.style.padding = "15px";
+                        item.innerHTML = `
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <strong>📝 اختبار: ${data.title || examId}</strong>
+                                <span class="info-value" style="color:var(--primary); font-size:20px;">${data.score}%</span>
+                            </div>
+                            <div style="font-size:12px; color:var(--text-sub); margin:10px 0;">
+                                📅 ${new Date(data.date).toLocaleDateString('ar-EG')} | ✅ ${data.correct} | ❌ ${data.wrong}
+                            </div>
+                            <button class="retake-btn" onclick="retakeExam('${examId}')">🔄 إعادة الاختبار الآن</button>
+                        `;
+                        listContainer.appendChild(item);
+                    } catch(e) {}
+                }
+            }
+            if (!hasExams) listContainer.innerHTML = '<p style="text-align:center; padding:20px;">لم تقم بإجراء أي اختبارات بعد.</p>';
+        }, 300);
+    }
+
+    // === دالة إعادة الاختبار ===
+    function retakeExam(examId) {
+        if (confirm("⚠️ هل تريد حقاً مسح نتيجتك القديمة وإعادة هذا الاختبار؟")) {
+            const user = window.Telegram.WebApp.initDataUnsafe?.user;
+            const userId = user ? user.id : 0;
+            const examKey = `exam_${examId}_${userId}`;
+            
+            localStorage.removeItem(examKey); // مسح السجل المحلي
+            
+            // إعادة التوجيه للاختبار
+            const url = new URL(window.location.href);
+            url.searchParams.set('exam_id', examId);
+            window.location.href = url.toString();
+        }
+    }
 
     </script>
 </body>
