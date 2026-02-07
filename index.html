@@ -71,6 +71,53 @@
             --input-bg: #f8f9fa;
             --border: #eee;
         }
+        
+        /* --- تنسيقات الشعار والدوران --- */
+        .profile-upload-section {
+            display: flex; flex-direction: column; align-items: center;
+            margin-bottom: 20px;
+        }
+        .rotating-circle-container {
+            position: relative; width: 100px; height: 100px;
+            cursor: pointer; display: flex; justify-content: center; align-items: center;
+        }
+        .profile-circle {
+            width: 90px; height: 90px; border-radius: 50%;
+            border: 3px dashed var(--text-sub);
+            display: flex; justify-content: center; align-items: center;
+            background-size: cover; background-position: center;
+            z-index: 2; transition: 0.3s;
+        }
+        .plus-sign { font-size: 35px; color: var(--text-sub); }
+        
+        /* أنميشن عند وجود صورة */
+        .profile-circle.has-image {
+            border: 3px solid var(--primary);
+            animation: slowSpin 20s linear infinite;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+        }
+        @keyframes slowSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+        /* الشعار في شاشة الطالب */
+        .exam-logo-display {
+            margin-bottom: 20px;
+            animation: bounce 2s infinite;
+        }
+        .exam-logo-display img {
+            width: 110px; height: 110px; border-radius: 50%;
+            border: 4px solid var(--primary);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            object-fit: cover;
+        }
+
+        /* شاشة التكبير */
+        .image-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); z-index: 9999;
+            display: flex; justify-content: center; align-items: center;
+        }
+        .image-overlay img { max-width: 90%; max-height: 80%; border-radius: 10px; }
+        
 
         /* 🌑 الوضع الليلي الجبار (أسود عميق) */
         body.night-mode {
@@ -1073,9 +1120,15 @@
 
         <!-- شاشة البداية -->
         <div class="card hidden" id="startScreen">
-            <div class="big-icon">📝</div>
+            <div id="examLogoContainer" class="exam-logo-display hidden">
+                <img id="examLogoImg" src="" alt="شعار الاختبار">
+            </div>
+
+            <div id="defaultIcon" class="big-icon">📝</div>
+
             <h1 id="examTitle">الاختبار</h1>
             <p class="subtitle">اختبر معلوماتك الآن!</p>
+
             
             <div class="exam-info">
                 <div class="info-row">
@@ -1175,6 +1228,19 @@
         </div>
 
         <div class="card hidden" id="adminPanel">
+        
+            <div class="profile-upload-section">
+                <input type="file" id="photoInput" accept="image/*" hidden>
+                <div class="rotating-circle-container" onclick="handleProfileClick()">
+                    <div class="profile-circle" id="profileCircle">
+                        <div id="uploadPlaceholder" class="plus-sign">+</div>
+                    </div>
+                    <div class="ring-rotator"></div>
+                </div>
+                <p class="subtitle" style="margin-top: 10px; font-size: 12px;">اضغط لإضافة شعار للاختبار</p>
+            </div>
+
+                
             <div class="dashboard-header">
                 <h2>👋 لوحة الإدارة</h2>
                 <button class="btn btn-outline" onclick="location.reload()" style="padding: 5px 15px; font-size: 12px; margin-top:5px">تسجيل خروج</button>
@@ -1306,6 +1372,7 @@
     let timeRemaining = 0;
     let startTime = null;
     let finalResultToBot = null; // متغير لتخزين النتيجة النهائية
+    let currentExamLogo = null; // متغير لحفظ صورة الاختبار الجديد
 
     // تهيئة تيليجرام
     try {
@@ -1365,6 +1432,7 @@
                         id: cloudId,
                         user_id: window.Telegram.WebApp.initDataUnsafe?.user?.id || 0,
                         title: data.title,
+                        logo: data.logo, // 👈 🔥 هذا هو السطر الجديد المهم جداً لجلب الشعار
                         duration: data.duration,
                         questions: data.questions.map((q, index) => ({
                             id: index + 1,
@@ -1505,22 +1573,35 @@
             return;
         }
         
-        // إخفاء شاشة التحميل
         document.getElementById('loadingScreen').classList.add('hidden');
 
-        // التحقق من الاختبارات السابقة
-        const examKey = `exam_${examData.id}_${examData.user_id}`;
-        if (localStorage.getItem(examKey)) {
-            const prevData = JSON.parse(localStorage.getItem(examKey));
-            document.getElementById('prevScore').textContent = prevData.score + '%';
-            showScreen('alreadyTakenScreen');
+        // التحقق من وجود شعار للاختبار وعرضه
+        const logoContainer = document.getElementById('examLogoContainer');
+        const defaultIcon = document.getElementById('defaultIcon');
+        const logoImg = document.getElementById('examLogoImg');
+
+        // examData.logo يأتي من قاعدة البيانات
+        if (examData.logo) {
+            logoImg.src = examData.logo;
+            logoContainer.classList.remove('hidden');
+            defaultIcon.classList.add('hidden'); // إخفاء الأيقونة العادية
         } else {
-            document.getElementById('examTitle').textContent = examData.title;
-            document.getElementById('totalQuestions').textContent = examData.questions.length;
-            document.getElementById('examDuration').textContent = examData.duration > 0 ? examData.duration + ' دقيقة' : 'مفتوح';
-            showScreen('startScreen');
+            logoContainer.classList.add('hidden');
+            defaultIcon.classList.remove('hidden');
+        }
+
+        // ... باقي الكود (التحقق من الاختبار السابق والعناوين) كما هو ...
+        const examKey = `exam_${examData.id}_${examData.user_id}`;
+        // ... (أكمل باقي الدالة كما كانت عندك) ...
+        if (localStorage.getItem(examKey)) {
+             // ... كود الشاشة المغلقة ...
+        } else {
+             document.getElementById('examTitle').textContent = examData.title;
+             // ... إلخ
+             showScreen('startScreen');
         }
     }
+
 
     // ═══════════════════════════════════════════════════════
     //                    دوال العرض والتنقل
@@ -2112,7 +2193,6 @@ ${result.timeout ? '⚠️ انتهى الوقت!' : ''}
                     optionsList.push(optText);
                     
                     // حفظ التعليل فقط إذا كان الخيار "خطأ" وتمت كتابة تعليل له
-                    // (لا نحفظ تعليل للإجابة الصحيحة لأن الطالب لا يحتاجه)
                     if (currentIdx !== correctIndex && optExpl) {
                         explanationsMap[currentIdx] = optExpl;
                     }
@@ -2133,11 +2213,12 @@ ${result.timeout ? '⚠️ انتهى الوقت!' : ''}
                                 ? (parseInt(document.getElementById('examDurationInput').value) || 0) 
                                 : 0;
 
-            // إرسال البيانات إلى Firebase
+            // 🔥 إرسال البيانات إلى Firebase (مع الصورة)
             const docRef = await db.collection("exams").add({
                 title: title,
                 duration: durationVal,
                 questions: questions,
+                logo: currentExamLogo, // 👈 هذا هو السطر الجديد الذي يحفظ الصورة
                 created_at: firebase.firestore.FieldValue.serverTimestamp()
             });
 
@@ -2342,6 +2423,7 @@ ${result.timeout ? '⚠️ انتهى الوقت!' : ''}
     }
 
     // === دالة إعادة الاختبار ===
+    // === دالة إعادة الاختبار ===
     function retakeExam(examId) {
         if (confirm("⚠️ هل تريد حقاً مسح نتيجتك القديمة وإعادة هذا الاختبار؟")) {
             const user = window.Telegram.WebApp.initDataUnsafe?.user;
@@ -2357,6 +2439,80 @@ ${result.timeout ? '⚠️ انتهى الوقت!' : ''}
         }
     }
 
-    </script>
+    // === دوال الصور (معالجة + ضغط + حفظ) ===
+    
+    function handleProfileClick() {
+        // إذا كان هناك صورة، اعرضها مكبرة، وإلا افتح الرفع
+        const circle = document.getElementById('profileCircle');
+        if (circle.classList.contains('has-image')) {
+            // إصلاح: استخراج الرابط بشكل نظيف
+            let style = circle.style.backgroundImage;
+            const imgUrl = style.slice(5, -2).replace(/"/g, ""); 
+            document.getElementById('expandedImage').src = imgUrl;
+            document.getElementById('imageOverlay').classList.remove('hidden');
+        } else {
+            document.getElementById('photoInput').click();
+        }
+    }
+
+    function closeOverlay() { 
+        document.getElementById('imageOverlay').classList.add('hidden'); 
+    }
+
+    // الاستماع لرفع الملف + ضغط الصورة (مهم جداً للفايربيس)
+    window.addEventListener('load', function() {
+        const input = document.getElementById('photoInput');
+        if(input) {
+            input.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const img = new Image();
+                    img.src = event.target.result;
+                    img.onload = function() {
+                        // إنشاء كانفاس لضغط الصورة (تصغيرها لـ 300 بكسل)
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        const maxSize = 300; // حجم مناسب جداً للأيقونة
+                        
+                        let width = img.width;
+                        let height = img.height;
+                        
+                        // حساب الأبعاد الجديدة للحفاظ على التناسب
+                        if (width > height) {
+                            if (width > maxSize) { height *= maxSize / width; width = maxSize; }
+                        } else {
+                            if (height > maxSize) { width *= maxSize / height; height = maxSize; }
+                        }
+                        
+                        canvas.width = width;
+                        canvas.height = height;
+                        ctx.drawImage(img, 0, 0, width, height);
+                        
+                        // تحويل الصورة لنص مضغوط (JPEG 0.7)
+                        const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                        
+                        // 1. الحفظ في المتغير (لإرساله للسحابة لاحقاً)
+                        currentExamLogo = dataUrl;
+                        
+                        // 2. العرض في الدائرة
+                        const circle = document.getElementById('profileCircle');
+                        circle.style.backgroundImage = `url('${dataUrl}')`;
+                        circle.classList.add('has-image');
+                        document.getElementById('uploadPlaceholder').style.display = 'none';
+                    }
+                }
+                reader.readAsDataURL(file);
+            });
+        }
+    });
+</script>
+
+<div id="imageOverlay" class="image-overlay hidden" onclick="closeOverlay()">
+    <img id="expandedImage" src="" alt="تكبير">
+</div>
+
 </body>
 </html>
