@@ -1643,13 +1643,14 @@
                 <div class="tree-item ${levelClass} ${hasChildren ? 'has-children' : ''}" 
                      data-id="${item.i || ''}" 
                      data-name="${item.n || ''}"
-                     data-has-children="${hasChildren}"
-                     style="padding-right: ${15 + paddingRight}px;">
-                    <div style="display: flex; align-items: center; gap: 8px; flex: 1;">
+                     style="padding-right: ${15 + paddingRight}px; padding-left: 5px;">
+                    
+                    <div class="tree-select-area" style="display: flex; align-items: center; gap: 8px; flex: 1; padding: 5px 0;">
                         <span class="icon">${icon}</span>
                         <span>${item.n || 'بدون اسم'}</span>
                     </div>
-                    ${hasChildren ? '<span class="expand-icon">◀</span>' : ''}
+
+                    ${hasChildren ? '<div class="expand-area" style="padding: 5px 15px; cursor: pointer;"><span class="expand-icon" style="display:inline-block; transition: transform 0.3s;">◀</span></div>' : ''}
                 </div>
             `;
 
@@ -1665,35 +1666,60 @@
         }
 
         function attachTreeListeners() {
-            const treeItems = document.querySelectorAll('.tree-item');
-            
-            treeItems.forEach(item => {
-                item.addEventListener('click', function(e) {
+            // 1. تفعيل زر الاختيار (الضغط على الاسم)
+            const selectAreas = document.querySelectorAll('.tree-select-area');
+            selectAreas.forEach(area => {
+                area.addEventListener('click', function(e) {
                     e.stopPropagation();
                     
-                    const hasChildren = this.dataset.hasChildren === 'true';
+                    const treeItem = this.closest('.tree-item');
                     
-                    if (hasChildren) {
-                        // توسيع/طي العناصر الفرعية
-                        this.classList.toggle('expanded');
-                        const childrenContainer = this.nextElementSibling;
-                        if (childrenContainer && childrenContainer.classList.contains('tree-children')) {
-                            childrenContainer.classList.toggle('open');
-                        }
+                    // إزالة التحديد من الكل وإضافته للقسم الحالي
+                    document.querySelectorAll('.tree-item').forEach(i => i.classList.remove('selected'));
+                    treeItem.classList.add('selected');
+                    
+                    // حفظ القسم المختار
+                    selectedCategoryId = treeItem.dataset.id;
+                    document.getElementById('selectedCategoryId').value = selectedCategoryId;
+                    document.getElementById('selectedCategoryText').textContent = '✅ ' + treeItem.dataset.name;
+                    
+                    // إغلاق القائمة
+                    setTimeout(() => {
+                        document.getElementById('categoryTree').classList.remove('open');
+                        document.querySelector('.category-selector-header').classList.remove('open');
+                    }, 300);
+                });
+            });
+
+            // 2. تفعيل زر السهم (الضغط لفتح الأقسام المتفرعة)
+            const expandAreas = document.querySelectorAll('.expand-area');
+            expandAreas.forEach(area => {
+                area.addEventListener('click', function(e) {
+                    e.stopPropagation(); // يمنع اختيار القسم عند فتح السهم
+                    
+                    const parentItem = this.closest('.tree-item');
+                    const icon = this.querySelector('.expand-icon');
+                    const childrenContainer = parentItem.nextElementSibling;
+                    
+                    parentItem.classList.toggle('expanded');
+                    
+                    // تحريك السهم للأسفل
+                    if (parentItem.classList.contains('expanded')) {
+                        icon.style.transform = 'rotate(-90deg)';
                     } else {
-                        // اختيار القسم النهائي
-                        document.querySelectorAll('.tree-item').forEach(i => i.classList.remove('selected'));
-                        this.classList.add('selected');
+                        icon.style.transform = 'rotate(0deg)';
+                    }
+                    
+                    // فتح وإغلاق الحاوية التي تحتويه بمرونة
+                    if (childrenContainer && childrenContainer.classList.contains('tree-children')) {
+                        childrenContainer.classList.toggle('open');
                         
-                        selectedCategoryId = this.dataset.id;
-                        document.getElementById('selectedCategoryId').value = selectedCategoryId;
-                        document.getElementById('selectedCategoryText').textContent = '✅ ' + this.dataset.name;
-                        
-                        // إغلاق القائمة
-                        setTimeout(() => {
-                            document.getElementById('categoryTree').classList.remove('open');
-                            document.querySelector('.category-selector-header').classList.remove('open');
-                        }, 300);
+                        // التغلب على قيود الطول للمستويات العميقة جداً
+                        if (childrenContainer.classList.contains('open')) {
+                            childrenContainer.style.maxHeight = '5000px'; 
+                        } else {
+                            childrenContainer.style.maxHeight = '0px';
+                        }
                     }
                 });
             });
