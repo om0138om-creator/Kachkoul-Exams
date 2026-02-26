@@ -6,272 +6,197 @@
     <title>منصة الاختبارات</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
-
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-
     <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+    
     <script>
-        // ضع هنا الآي دي الخاص بك وبالمشرفين
         const DEBUG_OWNERS = [5845118527, 1852302587, 8380781408];
         
-        // كود التحميل عند فتح الصفحة
         window.addEventListener('load', function() {
-            // 1. تفعيل وضع المطورين (Eruda)
             try {
                 const user = window.Telegram.WebApp.initDataUnsafe?.user;
-                // تفعيل الأداة فقط إذا كان المستخدم من الملاك
                 if (user && DEBUG_OWNERS.includes(user.id)) {
                     eruda.init();
                     console.log("👨‍💻 Developer Mode Active");
                 }
             } catch (e) {}
-
-            // 2. ⚡ استرجاع الخط العام من قاعدة البيانات (تلقائياً)
-            try {
-                // نتحقق إذا كان Firebase جاهزاً (db معرف في الأسفل)
-                if (typeof db !== 'undefined') {
-                    console.log("🔍 جاري البحث عن خط مخصص للمنصة...");
-                    db.collection('settings').doc('global_config').get().then((doc) => {
-                        if (doc.exists && doc.data().customFont) {
-                            console.log("✅ تم العثور على خط عام! جاري التطبيق...");
-                            applyCustomFont(doc.data().customFont);
-                        } else {
-                            console.log("ℹ️ لا يوجد خط مخصص، استخدام الافتراضي.");
-                        }
-                    }).catch((error) => {
-                        // لا نزعج المستخدم بالخطأ إذا كان مجرد مشكلة اتصال
-                        console.log("لم يتم تحميل الخط (ربما لا يوجد إنترنت):", error);
-                    });
-                }
-            } catch (e) {
-                console.error("خطأ في نظام الخطوط:", e);
-            }
         });
     </script>
 
     <style>
+        /* ═══════════════════════════════════════════════════════
+                         إعادة التعيين والمتغيرات
+           ═══════════════════════════════════════════════════════ */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
 
-        /* تعريف متغيرات الألوان الأساسية */
-        /* 🎨 تعريف الألوان لجميع الأوضاع */
-        /* 1. تعريف الألوان (تم تعديل الخلفية لتكون صلبة بدون تدرج) */
         :root {
             --primary: #FF512F;
             --secondary: #DD2476;
-            --bg: #ffffff; /* ⬜ خلفية بيضاء نقية للنهار */
-            --card-bg: transparent; /* جعل البطاقات شفافة لتندمج مع الخلفية */
-            --element-bg: #f8f9fa; /* لون للخلفيات الفرعية مثل الحقول */
+            --success: #27ae60;
+            --danger: #e74c3c;
+            --warning: #f39c12;
+            --bg: #ffffff;
+            --card-bg: #ffffff;
+            --element-bg: #f8f9fa;
             --text-main: #2c3e50;
             --text-sub: #6c757d;
             --input-bg: #f8f9fa;
             --border: #eee;
-        }
-        
-        /* --- تنسيقات الشعار والدوران --- */
-        /* --- تنسيقات الشعار والدوران (نسخة كبيرة وثابتة) --- */
-        /* --- تنسيقات الشعار (حجم مثالي + دوران مستمر) --- */
-        .profile-upload-section {
-            display: flex; flex-direction: column; align-items: center;
-            margin-bottom: 25px;
-        }
-        
-        /* 1. ضبط حجم الحاوية */
-        .rotating-circle-container {
-            position: relative; 
-            width: 125px; /* حجم وسط ومناسب جداً */
-            height: 125px;
-            cursor: pointer; 
-            display: flex; justify-content: center; align-items: center;
+            --shadow: 0 5px 20px rgba(0,0,0,0.1);
+            --radius: 15px;
         }
 
-        /* 2. ضبط حجم الدائرة */
-        .profile-circle {
-            width: 115px; 
-            height: 115px; 
-            border-radius: 50%;
-            border: 3px dashed var(--text-sub);
-            display: flex; justify-content: center; align-items: center;
-            background-size: cover; background-position: center;
-            z-index: 2; transition: 0.5s;
-        }
-        
-        .plus-sign { font-size: 40px; color: var(--text-sub); }
-        
-        /* ✅ إعادة تفعيل الدوران عند وجود صورة */
-        .profile-circle.has-image {
-            border: 3px solid var(--primary);
-            box-shadow: 0 0 20px rgba(0,0,0,0.15);
-            animation: slowSpin 20s linear infinite; /* 🔄 الدوران يعمل الآن! */
-        }
-        
-        /* الحلقة الخلفية */
-        .ring-rotator {
-            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-            border-radius: 50%; border: 2px dashed var(--primary);
-            opacity: 0; pointer-events: none;
-        }
-        .profile-circle.has-image + .ring-rotator {
-            opacity: 0.4; animation: slowSpin 15s linear infinite reverse;
-        }
-        
-        @keyframes slowSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-
-        
-
-        /* 🌑 الوضع الليلي الجبار (أسود عميق) */
         body.night-mode {
-            --bg: #000000; /* ⬛ أسود ملكي */
-            --card-bg: transparent;
-            --element-bg: #121212; /* لون العناصر في الليل */
+            --bg: #0a0a0a;
+            --card-bg: #121212;
+            --element-bg: #1a1a1a;
             --text-main: #ffffff;
-            --text-sub: #ff4d4d;
+            --text-sub: #ff6b6b;
             --primary: #ff003c;
             --secondary: #990024;
             --input-bg: #1a1a1a;
             --border: #333;
+            --shadow: 0 5px 20px rgba(255, 0, 60, 0.15);
         }
 
-        /* 2. إعدادات الجسم (ملء الشاشة وإلغاء الحواف) */
+        /* ═══════════════════════════════════════════════════════
+                              الجسم والحاوية
+           ═══════════════════════════════════════════════════════ */
         body {
-            font-family: inherit;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: var(--bg);
-            background-image: none !important; /* 🚫 إلغاء التدرج الرمادي */
             min-height: 100vh;
             margin: 0;
             padding: 0;
-            padding-top: 70px; /* مسافة للهيدر */
+            padding-top: 70px;
             direction: rtl;
             color: var(--text-main);
-            transition: 0.5s ease;
-            display: flex;
-            flex-direction: column;
+            transition: all 0.4s ease;
         }
 
-        /* 3. حاوية المحتوى (توسيط ذكي) */
         .container {
-            flex: 1; /* يأخذ باقي مساحة الشاشة */
-            display: flex;
-            flex-direction: column;
             width: 100%;
             max-width: 600px;
             margin: 0 auto;
             padding: 20px;
-        }
-
-        /* 4. تحويل "المربع" إلى واجهة كاملة (إلغاء الحدود والظلال) */
-        .card {
-            background: transparent !important; /* شفاف */
-            box-shadow: none !important; /* بدون ظل */
-            border: none !important; /* بدون حدود */
-            flex: 1; /* يمتد ليملأ الطول */
-            display: flex;
-            flex-direction: column;
-            align-items: center; /* 🎯 توسيط أفقي */
-            justify-content: center; /* 🎯 توسيط عمودي */
-            width: 100%;
-        }
-
-        /* استثناء: البطاقات التي تحتاج خلفية (مثل الأسئلة ولوحة التحكم) */
-        .question-card, .action-card, .timer-container, .edit-card {
-            background: var(--element-bg) !important;
-            border: 1px solid var(--border) !important;
-            border-radius: 20px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.05) !important;
-            width: 100%; /* عرض كامل */
-            margin-bottom: 20px;
-            display: block; /* إلغاء توسيط المحتوى الداخلي لهذه البطاقات */
-        }
-        
-        /* الوضع الليلي للعناصر المميزة */
-        body.night-mode .question-card, 
-        body.night-mode .action-card,
-        body.night-mode .timer-container {
-            background: #121212 !important;
-            border: 1px solid #ff003c !important; /* برواز أحمر نيون */
-            box-shadow: 0 0 15px rgba(255, 0, 60, 0.15) !important;
-        }
-
-        /* إصلاح النصوص */
-        h1, h2, h3, p, label, .info-value, .dropdown-item {
-            color: var(--text-main) !important;
-        }
-        .subtitle, .info-label, .question-counter {
-            color: var(--text-sub) !important;
-        }
-
-        /* ✍️ إصلاح حقول الإدخال */
-        .admin-input, select, textarea, .opt-text, .opt-expl {
-            background: var(--input-bg) !important;
-            color: var(--text-main) !important;
-            border: 1px solid var(--border) !important;
-            border-radius: 12px;
-        }
-        
-        /* تأثير التركيز */
-        .admin-input:focus, select:focus {
-            border-color: var(--primary) !important;
-            box-shadow: 0 0 10px rgba(255, 81, 47, 0.2);
-        }
-
-        /* 🔘 الأزرار */
-        .btn-primary {
-            background: linear-gradient(135deg, var(--primary), var(--secondary)) !important;
-            color: white !important;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
-            border: none !important;
-        }
-        
-        /* 📊 المربع الجبار للإحصائيات */
-        .stats-card-btn {
-            background: linear-gradient(45deg, #4facfe 0%, #00f2fe 100%);
-            border: 2px solid rgba(255,255,255,0.5) !important;
-        }
-        
-        body.night-mode .stats-card-btn {
-            background: linear-gradient(45deg, #ff003c, #000) !important;
-            border: 2px solid #ff003c !important;
-            box-shadow: 0 0 25px rgba(255, 0, 60, 0.5) !important;
-        }
-
-        /* تحديث لون خلفية الهيدر في الوضع الليلي */
-        .app-header {
-            background: var(--card-bg); /* سيصبح داكناً في الليل */
-            /* ... باقي تنسيقات الهيدر كما هي ... */
-        }
-
-
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(30px); }
-            to { opacity: 1; transform: translateY(0); }
+            min-height: calc(100vh - 70px);
         }
 
         .hidden { display: none !important; }
 
-        /* العناوين */
-        h1 {
-            color: var(--dark);
+        /* ═══════════════════════════════════════════════════════
+                                 الهيدر
+           ═══════════════════════════════════════════════════════ */
+        .app-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: var(--card-bg);
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            z-index: 1000;
+            transition: all 0.4s ease;
+        }
+
+        .app-title {
+            font-size: 18px;
+            font-weight: bold;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .menu-btn {
+            background: none;
+            border: none;
             font-size: 24px;
-            margin-bottom: 10px;
+            cursor: pointer;
+            color: var(--text-main);
+            padding: 5px 10px;
+            border-radius: 8px;
+            transition: 0.3s;
         }
 
-        h2 {
-            color: var(--dark);
-            font-size: 20px;
-            margin-bottom: 15px;
+        .menu-btn:hover { background: var(--element-bg); }
+
+        .theme-toggle {
+            font-size: 22px;
+            cursor: pointer;
+            transition: transform 0.3s;
         }
 
-        .subtitle {
-            color: var(--gray);
-            font-size: 14px;
-            margin-bottom: 20px;
+        .theme-toggle:hover { transform: rotate(20deg); }
+
+        /* ═══════════════════════════════════════════════════════
+                            القائمة المنسدلة
+           ═══════════════════════════════════════════════════════ */
+        .dropdown-menu {
+            position: fixed;
+            top: 65px;
+            left: 20px;
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            width: 220px;
+            padding: 10px 0;
+            display: none;
+            z-index: 1001;
+            border: 1px solid var(--border);
+            animation: slideDown 0.3s ease;
         }
 
-        /* أيقونة كبيرة */
+        .dropdown-menu.show { display: block; }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .dropdown-item {
+            padding: 14px 20px;
+            font-size: 15px;
+            color: var(--text-main);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: 0.2s;
+        }
+
+        .dropdown-item:hover {
+            background: var(--element-bg);
+            padding-right: 25px;
+        }
+
+        /* ═══════════════════════════════════════════════════════
+                               البطاقات
+           ═══════════════════════════════════════════════════════ */
+        .card {
+            background: var(--card-bg);
+            border-radius: 25px;
+            padding: 30px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            animation: fadeUp 0.5s ease;
+            text-align: center;
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
         .big-icon {
             font-size: 80px;
             margin-bottom: 20px;
@@ -283,46 +208,21 @@
             50% { transform: translateY(-10px); }
         }
 
-        /* معلومات الاختبار */
-        .exam-info {
-            background: var(--light);
-            border-radius: 15px;
-            padding: 20px;
-            margin: 20px 0;
-            text-align: right;
-        }
-
-        .info-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px 0;
-            border-bottom: 1px solid #eee;
-        }
-
-        .info-row:last-child { border-bottom: none; }
-
-        .info-label {
-            color: var(--gray);
-            font-size: 15px;
-        }
-
-        .info-value {
-            color: var(--dark);
-            font-weight: bold;
-            font-size: 15px;
-        }
-
-        /* الأزرار */
+        /* ═══════════════════════════════════════════════════════
+                              الأزرار
+           ═══════════════════════════════════════════════════════ */
         .btn {
-            display: inline-block;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
             padding: 15px 35px;
             font-size: 16px;
             font-weight: 600;
             border: none;
             border-radius: 30px;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             font-family: inherit;
             margin: 8px;
         }
@@ -332,16 +232,22 @@
         .btn-primary {
             background: linear-gradient(135deg, var(--primary), var(--secondary));
             color: white;
-            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 8px 25px rgba(255, 81, 47, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 35px rgba(255, 81, 47, 0.4);
         }
 
         .btn-success {
             background: linear-gradient(135deg, #27ae60, #2ecc71);
             color: white;
+            box-shadow: 0 8px 25px rgba(39, 174, 96, 0.3);
         }
 
         .btn-danger {
-            background: var(--danger);
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
             color: white;
         }
 
@@ -352,22 +258,447 @@
         }
 
         .btn-block {
-            display: block;
+            display: flex;
             width: 100%;
         }
 
         .btn:disabled {
             opacity: 0.6;
             cursor: not-allowed;
+            transform: none;
         }
 
-        /* شريط الوقت */
-        .timer-container {
-            background: white;
-            border-radius: 15px;
-            padding: 15px 20px;
+        /* ═══════════════════════════════════════════════════════
+                           أزرار الواجهة الكبيرة
+           ═══════════════════════════════════════════════════════ */
+        .action-card-big {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 20px;
             margin-bottom: 15px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+            border: none;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .action-card-big::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: 0.5s;
+        }
+
+        .action-card-big:hover::before { left: 100%; }
+
+        .action-card-big:active { transform: scale(0.96); }
+
+        .action-card-big.stats { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+        .action-card-big.exams { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+        .action-card-big.manage { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
+        .action-card-big.create { background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); color: #333; }
+
+        body.night-mode .action-card-big {
+            background: linear-gradient(135deg, var(--primary), #000) !important;
+            border: 2px solid var(--primary);
+            box-shadow: 0 0 25px rgba(255, 0, 60, 0.4);
+        }
+
+        body.night-mode .action-card-big.create { color: white; }
+
+        /* ═══════════════════════════════════════════════════════
+                      نظام الأقسام المتفرعة (Tree View)
+           ═══════════════════════════════════════════════════════ */
+        .category-selector {
+            background: var(--element-bg);
+            border: 2px solid var(--border);
+            border-radius: var(--radius);
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .category-selector-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            padding: 10px;
+            background: var(--input-bg);
+            border-radius: 10px;
+            transition: 0.3s;
+        }
+
+        .category-selector-header:hover { background: var(--border); }
+
+        .selected-category-text {
+            font-size: 15px;
+            color: var(--text-main);
+        }
+
+        .category-selector-header .arrow {
+            transition: transform 0.3s;
+            font-size: 12px;
+        }
+
+        .category-selector-header.open .arrow { transform: rotate(180deg); }
+
+        .category-tree {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease;
+        }
+
+        .category-tree.open {
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 10px;
+            padding: 5px;
+        }
+
+        .tree-item {
+            padding: 12px 15px;
+            margin: 3px 0;
+            border-radius: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--card-bg);
+            border: 1px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .tree-item:hover {
+            background: var(--element-bg);
+            border-color: var(--primary);
+        }
+
+        .tree-item.selected {
+            background: linear-gradient(135deg, rgba(255,81,47,0.1), rgba(221,36,118,0.1));
+            border-color: var(--primary);
+        }
+
+        .tree-item.parent { font-weight: bold; }
+
+        .tree-item .icon { margin-left: 10px; font-size: 18px; }
+
+        .tree-item .expand-icon {
+            font-size: 14px;
+            transition: transform 0.3s;
+            color: var(--text-sub);
+        }
+
+        .tree-item.expanded .expand-icon { transform: rotate(90deg); }
+
+        .tree-children {
+            padding-right: 25px;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+
+        .tree-children.open { max-height: 500px; }
+
+        .tree-item.child {
+            font-size: 14px;
+            padding: 10px 12px;
+            background: var(--input-bg);
+        }
+
+        .tree-item.grandchild {
+            font-size: 13px;
+            padding: 8px 10px;
+            margin-right: 15px;
+        }
+
+        /* ═══════════════════════════════════════════════════════
+                           بطاقات إدارة الاختبارات
+           ═══════════════════════════════════════════════════════ */
+        .exam-manage-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s;
+            animation: fadeUp 0.4s ease;
+        }
+
+        .exam-manage-card:hover {
+            border-color: var(--primary);
+            box-shadow: var(--shadow);
+            transform: translateX(-5px);
+        }
+
+        .exam-manage-info { flex: 1; text-align: right; }
+
+        .exam-manage-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: var(--text-main);
+            margin-bottom: 8px;
+        }
+
+        .exam-manage-meta {
+            display: flex;
+            gap: 15px;
+            font-size: 13px;
+            color: var(--text-sub);
+        }
+
+        .exam-manage-meta span { display: flex; align-items: center; gap: 5px; }
+
+        .exam-manage-actions { display: flex; gap: 10px; }
+
+        .btn-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            transition: all 0.3s;
+        }
+
+        .btn-icon.delete {
+            background: rgba(231, 76, 60, 0.1);
+            color: var(--danger);
+        }
+
+        .btn-icon.delete:hover {
+            background: var(--danger);
+            color: white;
+            transform: scale(1.1);
+        }
+
+        .btn-icon.edit {
+            background: rgba(52, 152, 219, 0.1);
+            color: #3498db;
+        }
+
+        .btn-icon.edit:hover {
+            background: #3498db;
+            color: white;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 50px 20px;
+            color: var(--text-sub);
+        }
+
+        .empty-state .icon { font-size: 60px; margin-bottom: 15px; opacity: 0.5; }
+
+        /* ═══════════════════════════════════════════════════════
+                            حقول الإدخال
+           ═══════════════════════════════════════════════════════ */
+        .admin-input, select, textarea {
+            width: 100%;
+            padding: 14px 18px;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            font-size: 15px;
+            margin-bottom: 12px;
+            transition: all 0.3s;
+            font-family: inherit;
+            background: var(--input-bg);
+            color: var(--text-main);
+        }
+
+        .admin-input:focus, select:focus, textarea:focus {
+            border-color: var(--primary);
+            outline: none;
+            box-shadow: 0 0 0 4px rgba(255, 81, 47, 0.1);
+        }
+
+        .admin-input::placeholder { color: var(--text-sub); }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--text-main);
+            font-size: 14px;
+        }
+
+        /* ═══════════════════════════════════════════════════════
+                              Toggle Switch
+           ═══════════════════════════════════════════════════════ */
+        .toggle-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--element-bg);
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .toggle-container span { color: var(--text-main); font-size: 14px; }
+
+        .switch {
+            position: relative;
+            width: 52px;
+            height: 28px;
+        }
+
+        .switch input { opacity: 0; width: 0; height: 0; }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: var(--border);
+            transition: 0.4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: 0.4s;
+            border-radius: 50%;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        input:checked + .slider { background: var(--success); }
+        input:checked + .slider:before { transform: translateX(24px); }
+
+        /* ═══════════════════════════════════════════════════════
+                           بطاقة تعديل السؤال
+           ═══════════════════════════════════════════════════════ */
+        .edit-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-right: 4px solid var(--primary);
+            border-radius: var(--radius);
+            padding: 20px;
+            margin-bottom: 20px;
+            position: relative;
+            animation: fadeUp 0.3s ease;
+        }
+
+        .remove-q-btn {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            background: rgba(231, 76, 60, 0.1);
+            color: var(--danger);
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .remove-q-btn:hover {
+            background: var(--danger);
+            color: white;
+            transform: rotate(90deg);
+        }
+
+        .option-row {
+            background: var(--element-bg);
+            padding: 12px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            border: 1px solid var(--border);
+            transition: all 0.3s;
+        }
+
+        .option-row:hover { border-color: var(--primary); }
+
+        .duration-field {
+            display: none;
+            margin-top: 12px;
+            animation: fadeUp 0.3s ease;
+        }
+
+        .duration-field.active { display: block; }
+
+        /* ═══════════════════════════════════════════════════════
+                            زر الإضافة العائم
+           ═══════════════════════════════════════════════════════ */
+        .fab-btn {
+            position: fixed;
+            bottom: 100px;
+            left: 20px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            font-size: 30px;
+            border: none;
+            box-shadow: 0 8px 25px rgba(255, 81, 47, 0.4);
+            cursor: pointer;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .fab-btn:hover { transform: scale(1.1) rotate(90deg); }
+
+        /* ═══════════════════════════════════════════════════════
+                           معلومات الاختبار
+           ═══════════════════════════════════════════════════════ */
+        .exam-info {
+            background: var(--element-bg);
+            border-radius: var(--radius);
+            padding: 20px;
+            margin: 20px 0;
+            text-align: right;
+            border: 1px solid var(--border);
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .info-row:last-child { border-bottom: none; }
+
+        .info-label { color: var(--text-sub); font-size: 14px; }
+        .info-value { color: var(--text-main); font-weight: bold; font-size: 15px; }
+
+        /* ═══════════════════════════════════════════════════════
+                         شاشة الاختبار والنتيجة
+           ═══════════════════════════════════════════════════════ */
+        .timer-container {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            padding: 18px;
+            margin-bottom: 15px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
         }
 
         .timer-header {
@@ -380,7 +711,7 @@
         .timer-display {
             font-size: 22px;
             font-weight: bold;
-            color: var(--dark);
+            color: var(--text-main);
         }
 
         .timer-display.danger {
@@ -395,15 +726,15 @@
 
         .question-counter {
             font-size: 14px;
-            color: var(--gray);
-            background: var(--light);
-            padding: 5px 15px;
+            color: var(--text-sub);
+            background: var(--element-bg);
+            padding: 6px 16px;
             border-radius: 20px;
         }
 
         .progress-track {
             height: 8px;
-            background: #e0e0e0;
+            background: var(--border);
             border-radius: 4px;
             overflow: hidden;
         }
@@ -415,12 +746,12 @@
             transition: width 0.4s ease;
         }
 
-        /* بطاقة السؤال */
         .question-card {
-            background: white;
+            background: var(--card-bg);
             border-radius: 20px;
             padding: 25px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
         }
 
         .question-number {
@@ -436,103 +767,73 @@
 
         .question-text {
             font-size: 17px;
-            color: var(--dark);
+            color: var(--text-main);
             line-height: 1.9;
             padding: 20px;
-            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
-            border-radius: 15px;
+            background: var(--element-bg);
+            border-radius: var(--radius);
             border-right: 5px solid var(--primary);
             margin-bottom: 25px;
             text-align: right;
             white-space: pre-wrap;
         }
 
-        /* الاختيارات */
-        .options-container {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
+        .options-container { display: flex; flex-direction: column; gap: 12px; }
 
         .option {
             display: flex;
             align-items: center;
             gap: 15px;
             padding: 16px 20px;
-            background: var(--light);
-            border: 2px solid #e0e0e0;
-            border-radius: 15px;
+            background: var(--element-bg);
+            border: 2px solid var(--border);
+            border-radius: var(--radius);
             cursor: pointer;
             transition: all 0.3s;
         }
 
         .option:hover {
             border-color: var(--primary);
-            background: #f0f3ff;
+            transform: translateX(-5px);
         }
 
         .option.selected {
             border-color: var(--primary);
-            background: linear-gradient(135deg, rgba(102,126,234,0.1), rgba(118,75,162,0.1));
+            background: linear-gradient(135deg, rgba(255,81,47,0.1), rgba(221,36,118,0.1));
         }
 
-        .option.correct {
-            border-color: var(--success);
-            background: rgba(39, 174, 96, 0.15);
-        }
-
-        .option.wrong {
-            border-color: var(--danger);
-            background: rgba(231, 76, 60, 0.15);
-        }
-
+        .option.correct { border-color: var(--success); background: rgba(39, 174, 96, 0.15); }
+        .option.wrong { border-color: var(--danger); background: rgba(231, 76, 60, 0.15); }
         .option.locked { pointer-events: none; }
 
         .option-marker {
-            width: 28px;
-            height: 28px;
-            border: 2px solid #ccc;
+            width: 32px;
+            height: 32px;
+            border: 2px solid var(--border);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 14px;
             font-weight: bold;
-            color: #ccc;
+            color: var(--text-sub);
             flex-shrink: 0;
             transition: all 0.3s;
         }
 
-        .option.selected .option-marker {
-            background: var(--primary);
-            border-color: var(--primary);
-            color: white;
-        }
-
-        .option.correct .option-marker {
-            background: var(--success);
-            border-color: var(--success);
-            color: white;
-        }
-
-        .option.wrong .option-marker {
-            background: var(--danger);
-            border-color: var(--danger);
-            color: white;
-        }
+        .option.selected .option-marker { background: var(--primary); border-color: var(--primary); color: white; }
+        .option.correct .option-marker { background: var(--success); border-color: var(--success); color: white; }
+        .option.wrong .option-marker { background: var(--danger); border-color: var(--danger); color: white; }
 
         .option-text {
             flex: 1;
             font-size: 15px;
-            color: var(--dark);
+            color: var(--text-main);
             text-align: right;
             line-height: 1.6;
         }
 
-        /* زر التسليم */
-        .submit-container {
-            margin-top: 25px;
-        }
+        .submit-container { margin-top: 25px; }
 
         .submit-btn {
             width: 100%;
@@ -540,7 +841,7 @@
             font-size: 17px;
             font-weight: 600;
             border: none;
-            border-radius: 15px;
+            border-radius: var(--radius);
             background: linear-gradient(135deg, var(--primary), var(--secondary));
             color: white;
             cursor: pointer;
@@ -548,21 +849,17 @@
             font-family: inherit;
         }
 
-        .submit-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
+        .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
         .submit-btn:not(:disabled):hover {
             transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 8px 25px rgba(255, 81, 47, 0.4);
         }
 
-        /* شاشة النتيجة */
-        .result-icon {
-            font-size: 90px;
-            margin-bottom: 15px;
-        }
+        /* ═══════════════════════════════════════════════════════
+                              شاشة النتيجة
+           ═══════════════════════════════════════════════════════ */
+        .result-icon { font-size: 90px; margin-bottom: 15px; }
 
         .result-score {
             font-size: 60px;
@@ -575,32 +872,46 @@
         }
 
         .result-stats {
-            background: var(--light);
-            border-radius: 15px;
+            background: var(--element-bg);
+            border-radius: var(--radius);
             padding: 20px;
             margin: 25px 0;
+            border: 1px solid var(--border);
         }
 
         .stat-row {
             display: flex;
             justify-content: space-between;
             padding: 12px 0;
-            border-bottom: 1px solid #eee;
+            border-bottom: 1px solid var(--border);
         }
 
         .stat-row:last-child { border-bottom: none; }
-
-        .stat-label { color: var(--gray); }
-
-        .stat-value {
-            font-weight: bold;
-            color: var(--dark);
-        }
-
+        .stat-label { color: var(--text-sub); }
+        .stat-value { font-weight: bold; color: var(--text-main); }
         .stat-value.success { color: var(--success); }
         .stat-value.danger { color: var(--danger); }
 
-        /* رسالة منبثقة */
+        /* ═══════════════════════════════════════════════════════
+                          التنبيهات والرسائل
+           ═══════════════════════════════════════════════════════ */
+        .alert {
+            background: rgba(243, 156, 18, 0.1);
+            border: 1px solid var(--warning);
+            border-radius: 12px;
+            padding: 15px;
+            margin: 15px 0;
+            text-align: right;
+            font-size: 14px;
+            color: var(--warning);
+        }
+
+        .alert-danger {
+            background: rgba(231, 76, 60, 0.1);
+            border-color: var(--danger);
+            color: var(--danger);
+        }
+
         .toast {
             position: fixed;
             top: 50%;
@@ -608,446 +919,241 @@
             transform: translate(-50%, -50%);
             padding: 25px 45px;
             border-radius: 20px;
-            font-size: 22px;
+            font-size: 20px;
             font-weight: bold;
             z-index: 9999;
             animation: toastIn 0.4s ease;
         }
 
-        .toast.success { background: #d4edda; color: var(--success); }
-        .toast.error { background: #f8d7da; color: var(--danger); }
+        .toast.success { background: rgba(39, 174, 96, 0.95); color: white; }
+        .toast.error { background: rgba(231, 76, 60, 0.95); color: white; }
 
         @keyframes toastIn {
             from { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
             to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
         }
 
-        /* تنبيه */
-        .alert {
-            background: #fff3cd;
-            border: 1px solid #ffc107;
+        /* ═══════════════════════════════════════════════════════
+                          نافذة التعليل المنبثقة
+           ═══════════════════════════════════════════════════════ */
+        .explanation-modal {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            backdrop-filter: blur(5px);
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .explanation-content {
+            background: var(--card-bg);
+            width: 90%;
+            max-width: 400px;
+            padding: 30px;
+            border-radius: 25px;
+            text-align: center;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.3);
+            animation: fadeUp 0.3s;
+            border: 1px solid var(--border);
+        }
+
+        .explanation-title {
+            color: var(--danger);
+            font-size: 22px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        .explanation-text {
+            background: var(--element-bg);
+            padding: 20px;
             border-radius: 12px;
-            padding: 15px;
-            margin: 15px 0;
-            text-align: right;
-            font-size: 14px;
-            color: #856404;
+            color: var(--text-main);
+            line-height: 1.7;
+            margin-bottom: 25px;
+            font-size: 16px;
+            border: 1px solid var(--border);
         }
 
-        .alert-danger {
-            background: #f8d7da;
-            border-color: #f5c6cb;
-            color: #721c24;
-        }
-
-        /* شاشة التحميل */
+        /* ═══════════════════════════════════════════════════════
+                             شاشة التحميل
+           ═══════════════════════════════════════════════════════ */
         .loading {
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             padding: 50px;
+            min-height: 60vh;
         }
 
         .spinner {
             width: 50px;
             height: 50px;
-            border: 4px solid #e0e0e0;
+            border: 4px solid var(--border);
             border-top-color: var(--primary);
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
 
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
         .loading-text {
             margin-top: 20px;
-            color: var(--gray);
+            color: var(--text-sub);
             font-size: 16px;
         }
 
-        /* نافذة التعليل */
-        .explanation-modal {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0, 0, 0, 0.6);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 10000;
-            backdrop-filter: blur(4px);
-            animation: fadeIn 0.3s;
-        }
-        
-        .explanation-content {
-            background: white;
-            width: 90%;
-            max-width: 400px;
-            padding: 25px;
-            border-radius: 20px;
-            text-align: center;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            animation: slideUp 0.3s;
-        }
-
-        .explanation-title {
-            color: var(--danger);
-            font-size: 20px;
-            font-weight: bold;
-            margin-bottom: 15px;
-        }
-
-        .explanation-text {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 10px;
-            color: var(--dark);
-            line-height: 1.6;
-            margin-bottom: 20px;
-            font-size: 16px;
-            border: 1px solid #eee;
-        }
-        
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        
-        /* 🎨 تصميم لوحة التحكم المتقدمة */
-        .admin-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .section-title {
-            font-size: 18px;
-            font-weight: bold;
-            color: var(--dark);
-            margin: 20px 0 10px 0;
-            border-bottom: 2px solid #eee;
-            padding-bottom: 5px;
-        }
-
-        /* 🔘 تصميم أزرار التبديل (On/Off Switches) */
-        .toggle-container {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: #fff;
-            padding: 12px;
-            border-radius: 12px;
-            margin-bottom: 10px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-        }
-
-        .switch {
-            position: relative;
-            display: inline-block;
-            width: 50px;
-            height: 26px;
-        }
-
-        .switch input { opacity: 0; width: 0; height: 0; }
-
-        .slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background-color: #ccc;
-            transition: .4s;
-            border-radius: 34px;
-        }
-
-        .slider:before {
-            position: absolute;
-            content: "";
-            height: 18px;
-            width: 18px;
-            left: 4px;
-            bottom: 4px;
-            background-color: white;
-            transition: .4s;
-            border-radius: 50%;
-        }
-
-        input:checked + .slider { background-color: var(--success); }
-        input:checked + .slider:before { transform: translateX(24px); }
-
-        /* حقول الإدخال */
-        .admin-input {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #eee;
-            border-radius: 10px;
-            font-size: 15px;
-            margin-bottom: 10px;
-            transition: 0.3s;
-            font-family: inherit;
-        }
-
-        .admin-input:focus {
-            border-color: var(--primary);
-            outline: none;
-        }
-
-        /* بطاقة السؤال في وضع التحرير */
-        .edit-card {
-            background: #fff;
-            border: 1px solid #eee;
-            border-right: 4px solid var(--primary);
-            border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 20px;
-            position: relative;
-            animation: slideUp 0.3s ease;
-        }
-
-        .remove-q-btn {
-            position: absolute;
-            top: 10px; left: 10px;
-            background: #ffebee;
-            color: #c62828;
-            border: none;
-            width: 30px; height: 30px;
-            border-radius: 50%;
-            cursor: pointer;
-            font-weight: bold;
-        }
-
-        /* حاوية التعليل (مخفية افتراضياً) */
-        .explanation-field {
-            display: none; /* مخفي */
-            background: #e8f5e9;
-            padding: 10px;
-            border-radius: 10px;
-            margin-top: 10px;
-        }
-        
-        .explanation-field.active { display: block; } /* يظهر عند التفعيل */
-
-        .duration-field {
-            display: none;
-            margin-top: 10px;
-        }
-        .duration-field.active { display: block; }
-
-        /* زر عائم للإضافة */
-        .fab-btn {
-            position: fixed;
-            bottom: 20px;
-            left: 20px;
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            background: var(--primary);
-            color: white;
-            font-size: 30px;
-            border: none;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-            cursor: pointer;
-            z-index: 100;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        
-        .theme-toggle { font-size: 22px; cursor: pointer; transition: 0.3s; }
-        /* 🚀 التصميم الجبار لمربع إحصائياتي */
-        /* 🚀 التصميم الجبار والموسط للأزرار الكبيرة */
-        .stats-card-btn, .my-exams-btn {
-            background: linear-gradient(45deg, #4facfe 0%, #00f2fe 100%);
-            color: white !important; 
-            padding: 25px; 
-            border-radius: 25px;
-            margin-bottom: 20px; 
-            cursor: pointer; 
-            text-align: center; /* 🎯 التوسيط المطلوب */
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-            border: 2px solid rgba(255,255,255,0.3);
-            position: relative; 
-            overflow: hidden;
+        /* ═══════════════════════════════════════════════════════
+                          صورة الشعار الدوارة
+           ═══════════════════════════════════════════════════════ */
+        .profile-upload-section {
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
+            margin-bottom: 25px;
         }
 
-        /* لون مختلف لزر اختباراتي لتمييزه */
-        .my-exams-btn {
-            background: linear-gradient(45deg, #667eea, #764ba2);
-        }
-
-        /* أنميشن الحركة عند الضغط (اهتزاز احترافي) */
-        .stats-card-btn:active, .my-exams-btn:active {
-            transform: scale(0.92) rotate(-1deg);
-            filter: brightness(1.1);
-        }
-
-        /* ✨ تأثير اللمعان السحري */
-        .stats-card-btn::after, .my-exams-btn::after {
-            content: ''; position: absolute; top: -50%; left: -50%;
-            width: 200%; height: 200%; background: rgba(255,255,255,0.15);
-            transform: rotate(45deg); transition: 0.6s;
-        }
-        .stats-card-btn:hover::after, .my-exams-btn:hover::after { left: 120%; }
-
-        /* 🔄 زر "إعادة الاختبار" الاحترافي جداً */
-        .retake-btn {
-            background: linear-gradient(45deg, #f093fb 0%, #f5576c 100%);
-            color: white !important;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 15px;
-            font-size: 14px;
-            font-weight: bold;
+        .rotating-circle-container {
+            position: relative;
+            width: 120px;
+            height: 120px;
             cursor: pointer;
-            box-shadow: 0 4px 15px rgba(245, 87, 108, 0.4);
-            transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            margin-top: 10px;
-        }
-        .retake-btn:active { transform: scale(0.9); }
-
-        /* 🔴 تعديلات الوضع الليلي للأزرار الجديدة */
-        body.night-mode .stats-card-btn, 
-        body.night-mode .my-exams-btn {
-            background: linear-gradient(45deg, #ff003c, #000) !important;
-            border: 2px solid #ff003c !important;
-            box-shadow: 0 0 20px rgba(255, 0, 60, 0.5) !important;
         }
 
-        /* ✨ تأثير اللمعان السحري الذي يمر فوق المربع */
-        .stats-card-btn::after {
-            content: ''; 
-            position: absolute; 
-            top: -50%; 
-            left: -50%;
-            width: 200%; 
-            height: 200%; 
-            background: rgba(255,255,255,0.2);
-            transform: rotate(45deg); 
-            transition: 0.6s;
-        }
-        .stats-card-btn:hover::after { 
-            left: 120%; 
+        .profile-circle {
+            width: 110px;
+            height: 110px;
+            border-radius: 50%;
+            border: 3px dashed var(--text-sub);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-size: cover;
+            background-position: center;
+            margin: auto;
+            transition: 0.5s;
         }
 
-        /* 🔴 شكل المربع في الوضع الليلي الجبار (أحمر نيون) */
-        /* 🌑 الوضع الليلي الجبار المطور (إصلاح تباين النصوص) */
-        body.night-mode {
-            --bg: #050505;
-            --card-bg: #121212;
-            --text-main: #ffffff;
-            --text-sub: #ff4d4d;
-            --border-glow: 0 0 15px rgba(255, 0, 60, 0.4);
-            --primary: #ff003c;
-            --secondary: #990024;
-            --input-bg: #1a1a1a;
+        .plus-sign { font-size: 40px; color: var(--text-sub); }
+
+        .profile-circle.has-image {
+            border: 3px solid var(--primary);
+            box-shadow: 0 0 20px rgba(255, 81, 47, 0.3);
+            animation: slowSpin 20s linear infinite;
         }
 
-        /* 🚀 إجبار جميع الأزرار والنصوص على التغير في الوضع الليلي */
-        body.night-mode .card, 
-        body.night-mode .app-header, 
-        body.night-mode .admin-input,
-        body.night-mode select,
-        body.night-mode textarea {
-            background: var(--card-bg) !important;
-            color: var(--text-main) !important;
-            border-color: var(--primary) !important;
+        @keyframes slowSpin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
         }
 
-        /* إصلاح نصوص الأزرار (كانت تظهر بالأسود) */
-        body.night-mode .btn-outline,
-        body.night-mode .info-label,
-        body.night-mode .subtitle,
-        body.night-mode h1, body.night-mode h2 {
-            color: var(--text-main) !important;
+        .exam-logo-display {
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 20px;
         }
 
-        /* زر العودة للبوت (إصلاح الشفافية واللون) */
-        body.night-mode .btn-primary {
-            background: linear-gradient(135deg, #ff003c, #000) !important;
-            color: white !important;
-            border: 1px solid white !important;
-            box-shadow: 0 5px 15px rgba(255, 0, 60, 0.4);
+        .exam-logo-display img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid var(--primary);
+            box-shadow: 0 5px 20px rgba(255, 81, 47, 0.3);
         }
 
-        /* حقول الإدخال في الوضع الليلي */
-        body.night-mode .admin-input::placeholder {
-            color: #666 !important;
+        /* ═══════════════════════════════════════════════════════
+                              قسم العناوين
+           ═══════════════════════════════════════════════════════ */
+        .section-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: var(--text-main);
+            margin: 25px 0 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
-        /* 📊 المربع الكبير للإحصائيات (تنسيق فيفيد أحمر) */
-        body.night-mode .stats-card-btn {
-            background: linear-gradient(45deg, #ff003c, #000) !important;
-            border: 3px solid #ff003c !important;
-            box-shadow: 0 0 30px rgba(255, 0, 60, 0.6) !important;
+        .dashboard-header {
+            text-align: center;
+            margin-bottom: 25px;
         }
 
-        
-        /* === تنسيقات الهيدر والقائمة والخطوط (جديد) === */
-        .app-header {
-            position: fixed; top: 0; left: 0; right: 0;
-            height: 60px; background: white;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 0 20px; z-index: 1000;
+        .dashboard-header h2 {
+            color: var(--text-main);
+            margin-bottom: 10px;
         }
-        .app-title { font-size: 18px; font-weight: bold; color: #667eea; }
-        .menu-btn { background: none; border: none; font-size: 24px; cursor: pointer; color: #333; display: none; }
-        
-        /* القائمة المنسدلة */
-        .dropdown-menu {
-            position: fixed; top: 60px; left: 20px;
-            background: white; border-radius: 12px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.15);
-            width: 200px; padding: 10px 0;
-            display: none; z-index: 1001;
-        }
-        .dropdown-menu.show { display: block; }
-        .dropdown-item {
-            padding: 12px 20px; font-size: 15px; color: #333;
-            cursor: pointer; display: flex; align-items: center; gap: 10px;
-        }
-        .dropdown-item:hover { background: #f8f9fa; }
 
-        /* تعديلات لوحة التحكم */
-        .dashboard-header { text-align: center; margin-bottom: 20px; }
-        .action-card {
-            background: #f8f9fa; border-radius: 12px; padding: 20px;
-            text-align: center; cursor: pointer; border: 1px solid #eee;
-            margin-bottom: 15px; transition: 0.2s;
+        /* ═══════════════════════════════════════════════════════
+                          تحسينات عامة إضافية
+           ═══════════════════════════════════════════════════════ */
+        h1, h2, h3 { color: var(--text-main); }
+        .subtitle { color: var(--text-sub); font-size: 14px; margin-bottom: 20px; }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: var(--element-bg); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--secondary); }
+
+        /* ═══════════════════════════════════════════════════════
+                          Overlay للصور المكبرة
+           ═══════════════════════════════════════════════════════ */
+        .image-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10001;
+            cursor: pointer;
         }
-        .action-card:hover { border-color: #667eea; background: white; }
-        #createExamForm { display: none; margin-top: 20px; } /* مخفي افتراضياً */
-        
-        /* تعديل المسافات لأننا أضفنا هيدر */
-        body { padding-top: 80px; }
-        
+
+        .image-overlay img {
+            max-width: 90%;
+            max-height: 90%;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        }
     </style>
 </head>
 <body>
 
+    <!-- ═══════════════════════════════════════════════════════
+                            الهيدر
+         ═══════════════════════════════════════════════════════ -->
     <header class="app-header">
-        <div class="menu-btn" onclick="toggleMenu()">⋮</div>
+        <div class="menu-btn" id="menuBtn" onclick="toggleMenu()">☰</div>
         <div class="app-title">كشكول الفوائد</div>
         <div class="theme-toggle" id="themeBtn" onclick="toggleNightMode()">🌙</div>
     </header>
 
-
+    <!-- ═══════════════════════════════════════════════════════
+                        القائمة المنسدلة
+         ═══════════════════════════════════════════════════════ -->
     <div class="dropdown-menu" id="dropdownMenu">
         <div class="dropdown-item" onclick="triggerFontUpload()"><span>🔤</span> تغيير خط الموقع</div>
         <div class="dropdown-item" onclick="resetFont()"><span>🔄</span> استعادة الخط الأصلي</div>
         <div class="dropdown-item" onclick="location.reload()"><span>🔁</span> تحديث الصفحة</div>
     </div>
-    
-    <input type="file" id="fontFileInput" accept=".ttf,.otf,.woff" style="display: none;" onchange="handleFontUpload(this)">
+
+    <input type="file" id="fontFileInput" accept=".ttf,.otf,.woff,.woff2" style="display: none;" onchange="handleFontUpload(this)">
 
     <div class="container">
-        
-        <!-- شاشة التحميل -->
+
+        <!-- ═══════════════════════════════════════════════════════
+                              شاشة التحميل
+             ═══════════════════════════════════════════════════════ -->
         <div class="card" id="loadingScreen">
             <div class="loading">
                 <div class="spinner"></div>
@@ -1055,55 +1161,67 @@
             </div>
         </div>
 
-        <!-- شاشة لا يوجد اختبار -->
+        <!-- ═══════════════════════════════════════════════════════
+                          شاشة لا يوجد اختبار
+             ═══════════════════════════════════════════════════════ -->
         <div class="card hidden" id="noExamScreen">
             <div class="big-icon">📚</div>
-            <h1>لا يوجد اختبار حالياً</h1>
-            <p class="subtitle">هذا التطبيق مخصص للاختبارات فقط</p>
-            <div class="alert">
+            <h1>مرحباً بك!</h1>
+            <p class="subtitle">منصة الاختبارات التفاعلية</p>
+            
+            <div id="userActionsContainer"></div>
+
+            <div class="alert" style="margin-top: 20px;">
                 ⏳ انتظر الاختبارات القادمة وسيتم إعلامك عند توفرها!
             </div>
+            
             <button class="btn btn-primary" onclick="closeApp()">
                 🔙 العودة للبوت
             </button>
         </div>
-        
+
+        <!-- ═══════════════════════════════════════════════════════
+                           شاشة الإحصائيات
+             ═══════════════════════════════════════════════════════ -->
         <div class="card hidden" id="statsScreen">
             <div style="font-size: 70px; margin-bottom: 15px;">📊</div>
-            <h1 style="text-align: center;">سجلي التعليمي</h1>
-            <p class="subtitle" style="text-align: center;">ملخص أدائك وتقدمك في المنصة</p>
-            
-            <div class="exam-info" style="background: var(--input-bg); border: 1px solid var(--border); border-radius: 20px;">
-                <div class="info-row" style="flex-direction: column; gap: 5px; padding: 15px;">
+            <h1>سجلي التعليمي</h1>
+            <p class="subtitle">ملخص أدائك وتقدمك في المنصة</p>
+
+            <div class="exam-info">
+                <div class="info-row" style="flex-direction: column; gap: 8px; padding: 20px;">
                     <span class="info-label">✅ اختبارات مكتملة</span>
-                    <span id="stTaken" class="info-value" style="font-size: 24px;">0</span>
+                    <span id="stTaken" class="info-value" style="font-size: 28px;">0</span>
                 </div>
-                <div class="info-row" style="flex-direction: column; gap: 5px; padding: 15px;">
+                <div class="info-row" style="flex-direction: column; gap: 8px; padding: 20px;">
                     <span class="info-label">⏳ اختبارات متبقية</span>
-                    <span id="stPending" class="info-value" style="font-size: 24px;">0</span>
+                    <span id="stPending" class="info-value" style="font-size: 28px;">0</span>
                 </div>
-                <div class="info-row" style="flex-direction: column; gap: 5px; padding: 15px; border-bottom: none;">
+                <div class="info-row" style="flex-direction: column; gap: 8px; padding: 20px; border-bottom: none;">
                     <span class="info-label">🎯 متوسط الدرجات</span>
-                    <span id="stAvg" class="info-value" style="font-size: 24px;">0%</span>
+                    <span id="stAvg" class="info-value" style="font-size: 28px;">0%</span>
                 </div>
             </div>
-            <button class="btn btn-primary btn-block" onclick="showScreen('noExamScreen')">🔙 العودة للرئيسية</button>
+
+            <button class="btn btn-primary btn-block" onclick="showScreen('noExamScreen')">🔙 العودة</button>
         </div>
 
+        <!-- ═══════════════════════════════════════════════════════
+                          شاشة سجل اختباراتي
+             ═══════════════════════════════════════════════════════ -->
         <div class="card hidden" id="myExamsScreen">
             <div style="font-size: 70px; margin-bottom: 15px;">📋</div>
-            <h1 style="text-align: center;">سجل اختباراتي</h1>
-            <p class="subtitle" style="text-align: center;">راجع نتائجك وأخطاءك السابقة</p>
-            
-            <div id="examsHistoryList" style="text-align: right; max-height: 400px; overflow-y: auto; margin: 20px 0; padding: 5px;">
-                </div>
+            <h1>سجل اختباراتي</h1>
+            <p class="subtitle">راجع نتائجك السابقة</p>
 
-            <button class="btn btn-primary btn-block" onclick="showScreen('noExamScreen')">🔙 العودة للرئيسية</button>
+            <div id="examsHistoryList" style="max-height: 400px; overflow-y: auto; margin: 20px 0;"></div>
+
+            <button class="btn btn-primary btn-block" onclick="showScreen('noExamScreen')">🔙 العودة</button>
         </div>
 
-        
-
-        <!-- شاشة تم الاختبار مسبقاً -->
+        <!-- ═══════════════════════════════════════════════════════
+                         شاشة تم الاختبار مسبقاً
+             ═══════════════════════════════════════════════════════ -->
         <div class="card hidden" id="alreadyTakenScreen">
             <div class="big-icon">🔒</div>
             <h1>تم إجراء الاختبار</h1>
@@ -1117,23 +1235,21 @@
             <div class="alert alert-danger">
                 ⚠️ لا يُسمح بإعادة الاختبار أكثر من مرة!
             </div>
-            <button class="btn btn-primary" onclick="closeApp()">
-                🔙 العودة للبوت
-            </button>
+            <button class="btn btn-primary" onclick="closeApp()">🔙 العودة للبوت</button>
         </div>
 
-        <!-- شاشة البداية -->
+        <!-- ═══════════════════════════════════════════════════════
+                             شاشة البداية
+             ═══════════════════════════════════════════════════════ -->
         <div class="card hidden" id="startScreen">
             <div id="examLogoContainer" class="exam-logo-display hidden">
                 <img id="examLogoImg" src="" alt="شعار الاختبار">
             </div>
-
             <div id="defaultIcon" class="big-icon">📝</div>
 
             <h1 id="examTitle">الاختبار</h1>
             <p class="subtitle">اختبر معلوماتك الآن!</p>
 
-            
             <div class="exam-info">
                 <div class="info-row">
                     <span class="info-label">❓ عدد الأسئلة</span>
@@ -1153,15 +1269,13 @@
                 ⚠️ <strong>تنبيه:</strong> بمجرد البدء لا يمكنك الخروج أو إعادة الاختبار!
             </div>
 
-            <button class="btn btn-success btn-block" onclick="startExam()">
-                ✅ ابدأ الاختبار الآن
-            </button>
-            <button class="btn btn-outline" onclick="closeApp()">
-                ❌ ليس الآن
-            </button>
+            <button class="btn btn-success btn-block" onclick="startExam()">✅ ابدأ الاختبار الآن</button>
+            <button class="btn btn-outline" onclick="closeApp()">❌ ليس الآن</button>
         </div>
 
-        <!-- شاشة الاختبار -->
+        <!-- ═══════════════════════════════════════════════════════
+                             شاشة الاختبار
+             ═══════════════════════════════════════════════════════ -->
         <div id="examScreen" class="hidden">
             <div class="timer-container">
                 <div class="timer-header">
@@ -1176,9 +1290,7 @@
             <div class="question-card">
                 <div class="question-number" id="questionBadge">السؤال 1</div>
                 <div class="question-text" id="questionText">نص السؤال يظهر هنا...</div>
-                
                 <div class="options-container" id="optionsContainer"></div>
-
                 <div class="submit-container">
                     <button class="submit-btn" id="submitBtn" onclick="submitAnswer()" disabled>
                         تسليم الإجابة ➡️
@@ -1187,12 +1299,14 @@
             </div>
         </div>
 
-        <!-- شاشة النتيجة -->
+        <!-- ═══════════════════════════════════════════════════════
+                             شاشة النتيجة
+             ═══════════════════════════════════════════════════════ -->
         <div class="card hidden" id="resultScreen">
             <div class="result-icon" id="resultIcon">🏆</div>
             <h2 id="resultTitle">أحسنت!</h2>
             <div class="result-score" id="resultScore">85%</div>
-            
+
             <div class="result-stats">
                 <div class="stat-row">
                     <span class="stat-label">📊 إجمالي الأسئلة</span>
@@ -1212,651 +1326,762 @@
                 </div>
             </div>
 
-            <p style="color: var(--success); margin-bottom: 20px;">
-                ✅ تم حفظ نتيجتك بنجاح!
-            </p>
-
-            <button class="btn btn-primary btn-block" onclick="closeApp()">
-                🏠 العودة للبوت
-            </button>
+            <p style="color: var(--success); margin-bottom: 20px;">✅ تم حفظ نتيجتك بنجاح!</p>
+            <button class="btn btn-primary btn-block" onclick="closeApp()">🏠 العودة للبوت</button>
         </div>
 
+        <!-- ═══════════════════════════════════════════════════════
+                            نافذة التعليل
+             ═══════════════════════════════════════════════════════ -->
         <div id="explanationModal" class="explanation-modal hidden">
             <div class="explanation-content">
                 <div class="explanation-title">❌ إجابة خاطئة</div>
                 <div id="explanationText" class="explanation-text"></div>
-                <button class="btn btn-primary btn-block" onclick="closeExplanation()">
-                    التالي ⬅️
-                </button>
+                <button class="btn btn-primary btn-block" onclick="closeExplanation()">التالي ⬅️</button>
             </div>
         </div>
 
+        <!-- ═══════════════════════════════════════════════════════
+                           شاشة إدارة الاختبارات
+             ═══════════════════════════════════════════════════════ -->
+        <div class="card hidden" id="manageExamsScreen">
+            <div style="font-size: 60px; margin-bottom: 15px;">🗂️</div>
+            <h1>إدارة الاختبارات</h1>
+            <p class="subtitle">عرض وحذف الاختبارات المحفوظة</p>
+
+            <div id="manageExamsList" style="margin: 20px 0; max-height: 450px; overflow-y: auto;"></div>
+
+            <button class="btn btn-outline btn-block" onclick="showScreen('adminPanel')">🔙 العودة للوحة التحكم</button>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════
+                             لوحة التحكم
+             ═══════════════════════════════════════════════════════ -->
         <div class="card hidden" id="adminPanel">
-        
+            
+            <!-- شعار لوحة التحكم -->
             <div class="profile-upload-section">
                 <input type="file" id="photoInput" accept="image/*" hidden>
                 <div class="rotating-circle-container" onclick="handleProfileClick()">
                     <div class="profile-circle" id="profileCircle">
                         <div id="uploadPlaceholder" class="plus-sign">+</div>
                     </div>
-                    <div class="ring-rotator"></div>
                 </div>
                 <p class="subtitle" style="margin-top: 10px; font-size: 12px;">اضغط لإضافة شعار للاختبار</p>
             </div>
 
-                
             <div class="dashboard-header">
                 <h2>👋 لوحة الإدارة</h2>
-                <button class="btn btn-outline" onclick="location.reload()" style="padding: 5px 15px; font-size: 12px; margin-top:5px">تسجيل خروج</button>
             </div>
 
-            <div class="action-card" onclick="toggleCreateForm()">
-                <div style="font-size: 30px; margin-bottom: 5px;">➕</div>
-                <div style="font-weight: bold;">إنشاء اختبار جديد</div>
+            <!-- أزرار الإجراءات -->
+            <div class="action-card-big create" onclick="toggleCreateForm()">
+                <div style="font-size: 35px; margin-bottom: 8px;">➕</div>
+                <div style="font-weight: bold; font-size: 16px;">إنشاء اختبار جديد</div>
             </div>
 
-            <div id="createExamForm">
-                <h3 style="margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px;">تفاصيل الاختبار</h3>
-                
+            <div class="action-card-big manage" onclick="openManageExams()">
+                <div style="font-size: 35px; margin-bottom: 8px;">🗂️</div>
+                <div style="font-weight: bold; font-size: 16px;">إدارة الاختبارات</div>
+                <div style="font-size: 12px; opacity: 0.8; margin-top: 5px;">عرض وحذف الاختبارات</div>
+            </div>
+
+            <!-- فورم إنشاء اختبار -->
+            <div id="createExamForm" class="hidden" style="margin-top: 25px;">
+                <div class="section-title">📝 تفاصيل الاختبار</div>
+
                 <label>📂 اختر القسم:</label>
-                <select id="categorySelect" class="admin-input" style="background: #f8f9fa;">
-                    <option value="" disabled selected>جاري تحميل الأقسام...</option>
-                </select>
                 
+                <!-- ═══════════════════════════════════════════════════════
+                              نظام الأقسام المتفرعة (Tree View)
+                     ═══════════════════════════════════════════════════════ -->
+                <div class="category-selector" id="categorySelector">
+                    <div class="category-selector-header" onclick="toggleCategoryTree()">
+                        <span class="selected-category-text" id="selectedCategoryText">🔻 اختر القسم</span>
+                        <span class="arrow">▼</span>
+                    </div>
+                    <div class="category-tree" id="categoryTree"></div>
+                </div>
+                <input type="hidden" id="selectedCategoryId" value="">
+
                 <label>عنوان الاختبار:</label>
                 <input type="text" id="examTitleInput" class="admin-input" placeholder="مثال: اختبار العقيدة">
 
-            <div class="section-title">⚙️ الخصائص</div>
+                <div class="section-title">⚙️ الخصائص</div>
 
-            <div class="toggle-container">
-                <span>⏱️ تحديد وقت للاختبار</span>
-                <label class="switch">
-                    <input type="checkbox" id="timerToggle" onchange="toggleDurationInput()">
-                    <span class="slider"></span>
-                </label>
-            </div>
-            <div id="durationInputContainer" class="duration-field">
-                <input type="number" id="examDurationInput" class="admin-input" placeholder="المدة بالدقائق (مثال: 30)">
-            </div>
-
-            <div class="toggle-container">
-                <span>💡 تفعيل التعليلات (شرح الخطأ)</span>
-                <label class="switch">
-                    <input type="checkbox" id="explanationToggle" onchange="toggleExplanationFields()">
-                    <span class="slider"></span>
-                </label>
-            </div>
-
-            <div class="section-title">📝 الأسئلة</div>
-            
-            <div id="questionsContainer">
+                <div class="toggle-container">
+                    <span>⏱️ تحديد وقت للاختبار</span>
+                    <label class="switch">
+                        <input type="checkbox" id="timerToggle" onchange="toggleDurationInput()">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div id="durationInputContainer" class="duration-field">
+                    <input type="number" id="examDurationInput" class="admin-input" placeholder="المدة بالدقائق (مثال: 30)">
                 </div>
 
-            <div style="height: 80px;"></div> <button class="fab-btn" onclick="addQuestionCard()">+</button>
-            
-            <button class="btn btn-success btn-block" onclick="saveExamToCloud()" style="position: fixed; bottom: 20px; right: 20px; width: calc(100% - 100px); z-index: 100; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
-                💾 حفظ وإرسال (سحابي)
+                <div class="toggle-container">
+                    <span>💡 تفعيل التعليلات (شرح الخطأ)</span>
+                    <label class="switch">
+                        <input type="checkbox" id="explanationToggle" onchange="toggleExplanationFields()">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="section-title">📝 الأسئلة</div>
+                <div id="questionsContainer"></div>
+
+                <div style="height: 120px;"></div>
+            </div>
+
+            <button class="fab-btn hidden" id="fabBtn" onclick="addQuestionCard()">+</button>
+
+            <button class="btn btn-success btn-block hidden" id="saveExamBtn" onclick="saveExamToCloud()" 
+                    style="position: fixed; bottom: 20px; right: 20px; width: calc(100% - 100px); z-index: 100;">
+                💾 حفظ وإرسال
             </button>
         </div>
-    </div> 
 
-<script>
-    // ═══════════════════════════════════════════════════════
-    // 1. إعدادات Firebase
-    // ═══════════════════════════════════════════════════════
-    
-    // ==========================================
-    // 🛡️ كود الأمان الجديد (أضف هذا الجزء)
-    // ==========================================
-    
-    // 1. مؤقت لإجبار شاشة التحميل على الاختفاء بعد 7 ثواني في حال حدوث خطأ
-    setTimeout(function() {
-        const loadingScreen = document.getElementById('loadingScreen');
-        if (loadingScreen && !loadingScreen.classList.contains('hidden')) {
-            console.error("⚠️ انتهى وقت الانتظار (Timeout).");
-            loadingScreen.classList.add('hidden');
-            
-            // إظهار رسالة خطأ واضحة للمستخدم
-            alert("⚠️ استغرق التحميل وقتاً طويلاً.\nيرجى التأكد من اتصال الإنترنت أو وجود مشكلة في Firebase.\n(اضغط على زر الترس لمعرفة الخطأ)");
-            
-            // تحويله لشاشة "لا يوجد اختبار" كإجراء احتياطي
-            document.getElementById('noExamScreen').classList.remove('hidden');
-        }
-    }, 7000);
+    </div>
 
-    // ==========================================
-    // نهاية كود الأمان
-    // ==========================================
-    
-    const firebaseConfig = {
-        apiKey: "AIzaSyCfFfo6mhQE702r476RWhvRP3Z86wGeu_o",
-        authDomain: "kachkoul-exams.firebaseapp.com",
-        projectId: "kachkoul-exams",
-        storageBucket: "kachkoul-exams.firebasestorage.app",
-        messagingSenderId: "583161070886",
-        appId: "1:583161070886:web:16a0ca69b9c5c37bd4ede7",
-        measurementId: "G-SZZNF25HHS"
-    };
-
-    // 2. تهيئة Firebase (مرة واحدة فقط وبأمان)
-    // تعريف المتغير خارج الشرط ليكون متاحاً عالمياً
-    let db = null; 
-
-    try {
-        if (typeof firebase !== 'undefined') {
-            if (!firebase.apps.length) {
-                firebase.initializeApp(firebaseConfig);
-            }
-            db = firebase.firestore();
-            console.log("✅ Firebase initialized successfully");
-        } else {
-            console.error("❌ مكتبة Firebase لم يتم تحميلها (تأكد من الإنترنت)");
-            alert("خطأ: لم يتم تحميل مكتبات Firebase. تأكد من الإنترنت.");
-        }
-    } catch (e) {
-        console.error("❌ خطأ في تهيئة Firebase:", e);
-        alert("حدث خطأ أثناء الاتصال بقاعدة البيانات: " + e.message);
-    }
-
-
-    // ═══════════════════════════════════════════════════════
-    //                    الإعدادات والمتغيرات
-    // ═══════════════════════════════════════════════════════
-    
-    const BOT_TOKEN = "7592041395:AAEvcg8RPVmNgIbcrBYRZidpZx61q2Ftw-c";
-    const CHANNEL_ID = "-1003308250289";
-    const OWNERS = [5845118527, 1852302587, 8380781408];
-
-    let tg = null;
-    let examData = null;
-    let currentQuestion = 0;
-    let selectedOption = null;
-    let userAnswers = [];
-    let timerInterval = null;
-    let timeRemaining = 0;
-    let startTime = null;
-    let finalResultToBot = null; // متغير لتخزين النتيجة النهائية
-    let currentExamLogo = null; // متغير لحفظ صورة الاختبار الجديد
-
-    // تهيئة تيليجرام
-    try {
-        tg = window.Telegram.WebApp;
-        tg.ready();
-        tg.expand();
-        tg.MainButton.hide();
-    } catch(e) {
-        console.log('Not running in Telegram');
-    }
-
-    // ═══════════════════════════════════════════════════════
-    //                    تحميل البيانات
-    // ═══════════════════════════════════════════════════════
-    
-    document.addEventListener('DOMContentLoaded', function() {
-        // ---------------------------------------------------------
-        // 1. 🖼️ تحميل شعار لوحة التحكم (الجديد)
-        // هذا الجزء يستمع لقاعدة البيانات ويحدث الصورة فوراً عند أي تغيير
-        // ---------------------------------------------------------
-        if (typeof db !== 'undefined') {
-            db.collection('settings').doc('dashboard_config').onSnapshot((doc) => {
-                if (doc.exists && doc.data().adminLogo) {
-                    // دالة تطبيق الشعار التي أضفناها سابقاً
-                    applyDashboardLogo(doc.data().adminLogo);
-                }
-            });
-        }
-
-        // ---------------------------------------------------------
-        // 2. ⚙️ معالجة الأقسام واختبارات البوت (القديم)
-        // ---------------------------------------------------------
-        const urlParams = new URLSearchParams(window.location.search);
+    <!-- Overlay للصور المكبرة -->
+    <div id="imageOverlay" class="image-overlay hidden" onclick="closeOverlay()">
+        <img id="expandedImage" src="" alt="تكبير">
+    </div>
+    <!-- ═══════════════════════════════════════════════════════
+                         JavaScript الكامل
+         ═══════════════════════════════════════════════════════ -->
+    <script>
+        // ═══════════════════════════════════════════════════════
+        //                 إعدادات Firebase
+        // ═══════════════════════════════════════════════════════
         
-        // أ. إذا وجدنا كلمة 'cats' في الرابط (جاي من البوت لإنشاء اختبار)
-        if (urlParams.has('cats')) {
-            console.log("🛠️ وضع الإنشاء: تم اكتشاف بيانات جديدة.");
-            // نستخدم الدالة الجديدة التي تفك التشفير + تحفظ في السحابة
-            if (typeof loadAndSyncCategories === 'function') {
-                loadAndSyncCategories(); 
-            } else {
-                try { loadCategoriesFromURL(); } catch(e) {}
-            }
-        } 
-        // ب. الوضع العادي (فتح التطبيق أو عرض اختبار)
-        else {
-            // محاولة جلب الأقسام المحفوظة من السحابة (لتعمل القائمة دائماً)
-            if (typeof fetchCategoriesFromCloud === 'function') {
-                fetchCategoriesFromCloud();
-            }
-            
-            // تحميل بيانات الاختبار (إذا كان الرابط يحتوي على اختبار)
-            setTimeout(loadExamData, 500);
-        }
-    });
+        const firebaseConfig = {
+            apiKey: "AIzaSyCfFfo6mhQE702r476RWhvRP3Z86wGeu_o",
+            authDomain: "kachkoul-exams.firebaseapp.com",
+            projectId: "kachkoul-exams",
+            storageBucket: "kachkoul-exams.firebasestorage.app",
+            messagingSenderId: "583161070886",
+            appId: "1:583161070886:web:16a0ca69b9c5c37bd4ede7",
+            measurementId: "G-SZZNF25HHS"
+        };
 
+        let db = null;
 
-
-    async function loadExamData() {
         try {
-            const urlParams = new URLSearchParams(window.location.search);
-            const cloudId = urlParams.get('exam_id'); // هل يوجد ID سحابي؟
-            const legacyData = urlParams.get('data'); // هل توجد بيانات قديمة؟
-
-            // 1. إذا كان الاختبار سحابياً (من Firebase)
-            if (cloudId) {
-                console.log("جاري جلب الاختبار من السحابة:", cloudId);
-                const doc = await db.collection("exams").doc(cloudId).get();
-                
-                if (doc.exists) {
-                    const data = doc.data();
-                    examData = {
-                        id: cloudId,
-                        user_id: window.Telegram.WebApp.initDataUnsafe?.user?.id || 0,
-                        title: data.title,
-                        logo: data.logo, // 👈 🔥 هذا هو السطر الجديد المهم جداً لجلب الشعار
-                        duration: data.duration,
-                        questions: data.questions.map((q, index) => ({
-                            id: index + 1,
-                            text: q.text,
-                            options: q.options,
-                            correct: q.correct,
-                            explanations: q.explanations
-                        }))
-                    };
-                    setupExamUI(); // عرض الاختبار
-                    return;
-                } else {
-                    alert("⚠️ عذراً، هذا الاختبار غير موجود.");
-                    showNoExamScreen();
-                    return;
+            if (typeof firebase !== 'undefined') {
+                if (!firebase.apps.length) {
+                    firebase.initializeApp(firebaseConfig);
                 }
+                db = firebase.firestore();
+                console.log("✅ Firebase initialized successfully");
+            } else {
+                console.error("❌ Firebase library not loaded");
+            }
+        } catch (e) {
+            console.error("❌ Firebase initialization error:", e);
+        }
+
+        // ═══════════════════════════════════════════════════════
+        //                  الإعدادات والمتغيرات
+        // ═══════════════════════════════════════════════════════
+        
+        const BOT_TOKEN = "7592041395:AAEvcg8RPVmNgIbcrBYRZidpZx61q2Ftw-c";
+        const CHANNEL_ID = "-1003308250289";
+        const OWNERS = [5845118527, 1852302587, 8380781408];
+
+        let tg = null;
+        let examData = null;
+        let currentQuestion = 0;
+        let selectedOption = null;
+        let userAnswers = [];
+        let timerInterval = null;
+        let timeRemaining = 0;
+        let startTime = null;
+        let finalResultToBot = null;
+        let currentExamLogo = null;
+        let qCounter = 0;
+        let categoriesData = [];
+        let selectedCategoryId = '';
+
+        // تهيئة تيليجرام
+        try {
+            tg = window.Telegram.WebApp;
+            tg.ready();
+            tg.expand();
+            tg.MainButton.hide();
+        } catch(e) {
+            console.log('Not running in Telegram');
+        }
+
+        // مؤقت أمان للتحميل
+        setTimeout(function() {
+            const loadingScreen = document.getElementById('loadingScreen');
+            if (loadingScreen && !loadingScreen.classList.contains('hidden')) {
+                console.warn("⚠️ Loading timeout reached");
+                loadingScreen.classList.add('hidden');
+                showNoExamScreen();
+            }
+        }, 8000);
+
+        // ═══════════════════════════════════════════════════════
+        //                  تحميل البيانات الأولية
+        // ═══════════════════════════════════════════════════════
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            initApp();
+        });
+
+        async function initApp() {
+            // استرجاع الوضع الليلي
+            if (localStorage.getItem('nightMode') === 'true') {
+                document.body.classList.add('night-mode');
+                document.getElementById('themeBtn').textContent = '☀️';
             }
 
-            // 2. إذا كان الاختبار بالطريقة القديمة (للاحتياط)
-            if (legacyData) {
-                const base64 = legacyData.replace(/-/g, '+').replace(/_/g, '/');
-                const binaryString = window.atob(base64);
-                const bytes = new Uint8Array(binaryString.length);
-                for (let i = 0; i < binaryString.length; i++) {
-                    bytes[i] = binaryString.charCodeAt(i);
-                }
-                const jsonString = pako.inflate(bytes, { to: 'string' });
-                const rawData = JSON.parse(jsonString);
+            // تحميل الخط المخصص
+            loadCustomFont();
 
-                examData = {
-                    id: rawData.i || rawData.id,
-                    user_id: rawData.u || rawData.user_id,
-                    title: rawData.t || rawData.title,
-                    duration: rawData.d || rawData.duration,
-                    questions: (rawData.q || rawData.questions || []).map(item => ({
-                        id: item.i || item.id, text: item.k || item.text, 
-                        options: item.o || item.options, correct: item.c || item.correct, 
-                        explanations: item.e || item.explanations
-                    }))
-                };
-                setupExamUI();
+            // تحميل شعار لوحة التحكم
+            loadDashboardLogo();
+
+            const urlParams = new URLSearchParams(window.location.search);
+
+            // التحقق من وضع إنشاء الاختبار
+            if (urlParams.has('cats')) {
+                console.log("🛠️ Admin mode detected");
+                await loadAndSyncCategories();
                 return;
             }
 
-            // لا يوجد بيانات
-            showNoExamScreen();
+            // تحميل الأقسام من السحابة
+            await fetchCategoriesFromCloud();
 
-        } catch(e) {
-            console.error('Error:', e);
-            alert('خطأ في التحميل: ' + e.message);
-            showNoExamScreen();
+            // تحميل بيانات الاختبار
+            await loadExamData();
         }
-    }
 
-    // دالة فك تشفير الأقسام من الرابط
-    // دالة فك تشفير الأقسام من الرابط
-    // ═══════════════════════════════════════════════════════
-    //           نظام مزامنة الأقسام الذكي (بديل الدالة القديمة)
-    // ═══════════════════════════════════════════════════════
-
-    // 1. دالة جديدة: تفك التشفير وتعرض الأقسام + تحفظها في Firebase
-    function loadAndSyncCategories() {
-        const urlParams = new URLSearchParams(window.location.search);
-        const catsData = urlParams.get('cats');
+        // ═══════════════════════════════════════════════════════
+        //              نظام الأقسام المتفرعة (Tree View)
+        // ═══════════════════════════════════════════════════════
         
-        if (catsData) {
+        async function loadAndSyncCategories() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const catsData = urlParams.get('cats');
+
+            if (catsData) {
+                try {
+                    const base64 = catsData.replace(/-/g, '+').replace(/_/g, '/');
+                    const binaryString = window.atob(base64);
+                    const bytes = new Uint8Array(binaryString.length);
+                    for (let i = 0; i < binaryString.length; i++) {
+                        bytes[i] = binaryString.charCodeAt(i);
+                    }
+                    const decompressed = pako.inflate(bytes, { to: 'string' });
+                    categoriesData = JSON.parse(decompressed);
+
+                    // حفظ في Firebase
+                    if (db) {
+                        await db.collection('settings').doc('app_categories').set({
+                            data: categoriesData,
+                            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                        console.log("✅ Categories saved to cloud");
+                    }
+
+                    // بناء شجرة الأقسام
+                    buildCategoryTree(categoriesData);
+                    
+                    // إظهار لوحة التحكم
+                    document.getElementById('loadingScreen').classList.add('hidden');
+                    showScreen('adminPanel');
+
+                } catch (e) {
+                    console.error("Error parsing categories:", e);
+                    alert("خطأ في معالجة البيانات: " + e.message);
+                }
+            }
+        }
+
+        async function fetchCategoriesFromCloud() {
+            if (!db) return;
+
             try {
-                // فك التشفير (نفس المنطق القديم)
-                const base64 = catsData.replace(/-/g, '+').replace(/_/g, '/');
-                const binaryString = window.atob(base64);
-                const bytes = new Uint8Array(binaryString.length);
-                for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
-                const decompressed = pako.inflate(bytes, { to: 'string' });
-                const categories = JSON.parse(decompressed);
-                
-                // أ) عرض الأقسام في القائمة
-                populateCategorySelect(categories);
-                
-                // ب) 🔥 الحفظ في Firebase (للمستقبل)
-                if (typeof db !== 'undefined') {
-                    db.collection('settings').doc('app_categories').set({
-                        data: categories,
-                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                    }).then(() => console.log("✅ تم حفظ الأقسام في السحابة"));
+                const doc = await db.collection('settings').doc('app_categories').get();
+                if (doc.exists && doc.data().data) {
+                    categoriesData = doc.data().data;
+                    buildCategoryTree(categoriesData);
+                    console.log("📥 Categories loaded from cloud");
+                }
+            } catch (e) {
+                console.log("Could not fetch categories:", e);
+            }
+        }
+
+        function buildCategoryTree(categories) {
+            const treeContainer = document.getElementById('categoryTree');
+            if (!treeContainer) return;
+
+            treeContainer.innerHTML = '';
+            
+            categories.forEach((cat, index) => {
+                const itemHtml = createTreeItem(cat, 0, `cat_${index}`);
+                treeContainer.insertAdjacentHTML('beforeend', itemHtml);
+            });
+
+            // إضافة مستمعي الأحداث
+            attachTreeListeners();
+        }
+
+        function createTreeItem(item, level, parentId) {
+            const hasChildren = item.s && item.s.length > 0;
+            const levelClass = level === 0 ? 'parent' : (level === 1 ? 'child' : 'grandchild');
+            const icon = level === 0 ? '📂' : (level === 1 ? '📁' : '📄');
+            const paddingRight = level * 20;
+
+            let html = `
+                <div class="tree-item ${levelClass} ${hasChildren ? 'has-children' : ''}" 
+                     data-id="${item.i || ''}" 
+                     data-name="${item.n || ''}"
+                     data-has-children="${hasChildren}"
+                     style="padding-right: ${15 + paddingRight}px;">
+                    <div style="display: flex; align-items: center; gap: 8px; flex: 1;">
+                        <span class="icon">${icon}</span>
+                        <span>${item.n || 'بدون اسم'}</span>
+                    </div>
+                    ${hasChildren ? '<span class="expand-icon">◀</span>' : ''}
+                </div>
+            `;
+
+            if (hasChildren) {
+                html += `<div class="tree-children" data-parent="${parentId}">`;
+                item.s.forEach((child, idx) => {
+                    html += createTreeItem(child, level + 1, `${parentId}_${idx}`);
+                });
+                html += `</div>`;
+            }
+
+            return html;
+        }
+
+        function attachTreeListeners() {
+            const treeItems = document.querySelectorAll('.tree-item');
+            
+            treeItems.forEach(item => {
+                item.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    
+                    const hasChildren = this.dataset.hasChildren === 'true';
+                    
+                    if (hasChildren) {
+                        // توسيع/طي العناصر الفرعية
+                        this.classList.toggle('expanded');
+                        const childrenContainer = this.nextElementSibling;
+                        if (childrenContainer && childrenContainer.classList.contains('tree-children')) {
+                            childrenContainer.classList.toggle('open');
+                        }
+                    } else {
+                        // اختيار القسم النهائي
+                        document.querySelectorAll('.tree-item').forEach(i => i.classList.remove('selected'));
+                        this.classList.add('selected');
+                        
+                        selectedCategoryId = this.dataset.id;
+                        document.getElementById('selectedCategoryId').value = selectedCategoryId;
+                        document.getElementById('selectedCategoryText').textContent = '✅ ' + this.dataset.name;
+                        
+                        // إغلاق القائمة
+                        setTimeout(() => {
+                            document.getElementById('categoryTree').classList.remove('open');
+                            document.querySelector('.category-selector-header').classList.remove('open');
+                        }, 300);
+                    }
+                });
+            });
+        }
+
+        function toggleCategoryTree() {
+            const tree = document.getElementById('categoryTree');
+            const header = document.querySelector('.category-selector-header');
+            
+            tree.classList.toggle('open');
+            header.classList.toggle('open');
+        }
+
+        // ═══════════════════════════════════════════════════════
+        //                تحميل بيانات الاختبار
+        // ═══════════════════════════════════════════════════════
+        
+        async function loadExamData() {
+            try {
+                const urlParams = new URLSearchParams(window.location.search);
+                const cloudId = urlParams.get('exam_id');
+                const legacyData = urlParams.get('data');
+
+                // اختبار سحابي
+                if (cloudId) {
+                    console.log("☁️ Loading cloud exam:", cloudId);
+                    const doc = await db.collection("exams").doc(cloudId).get();
+
+                    if (doc.exists) {
+                        const data = doc.data();
+                        examData = {
+                            id: cloudId,
+                            user_id: window.Telegram?.WebApp?.initDataUnsafe?.user?.id || 0,
+                            title: data.title,
+                            logo: data.logo,
+                            duration: data.duration,
+                            questions: data.questions.map((q, index) => ({
+                                id: index + 1,
+                                text: q.text,
+                                options: q.options,
+                                correct: q.correct,
+                                explanations: q.explanations || {}
+                            }))
+                        };
+                        setupExamUI();
+                        return;
+                    } else {
+                        alert("⚠️ هذا الاختبار غير موجود");
+                        showNoExamScreen();
+                        return;
+                    }
                 }
 
-                // ج) فتح لوحة التحكم
-                showScreen('adminPanel');
+                // اختبار قديم (للتوافق)
+                if (legacyData) {
+                    const base64 = legacyData.replace(/-/g, '+').replace(/_/g, '/');
+                    const binaryString = window.atob(base64);
+                    const bytes = new Uint8Array(binaryString.length);
+                    for (let i = 0; i < binaryString.length; i++) {
+                        bytes[i] = binaryString.charCodeAt(i);
+                    }
+                    const jsonString = pako.inflate(bytes, { to: 'string' });
+                    const rawData = JSON.parse(jsonString);
+
+                    examData = {
+                        id: rawData.i || rawData.id,
+                        user_id: rawData.u || rawData.user_id,
+                        title: rawData.t || rawData.title,
+                        duration: rawData.d || rawData.duration,
+                        questions: (rawData.q || rawData.questions || []).map(item => ({
+                            id: item.i || item.id,
+                            text: item.k || item.text,
+                            options: item.o || item.options,
+                            correct: item.c || item.correct,
+                            explanations: item.e || item.explanations || {}
+                        }))
+                    };
+                    setupExamUI();
+                    return;
+                }
+
+                // لا يوجد اختبار
+                showNoExamScreen();
 
             } catch (e) {
-                console.error(e);
-                alert("خطأ في معالجة البيانات: " + e.message);
+                console.error('Error loading exam:', e);
+                showNoExamScreen();
             }
         }
-    }
 
-    // 2. دالة جديدة: تجلب الأقسام من Firebase (عند الدخول من الزر العادي)
-    function fetchCategoriesFromCloud() {
-        if (typeof db === 'undefined') return;
-        
-        console.log("☁️ محاولة جلب الأقسام من السحابة...");
-        db.collection('settings').doc('app_categories').get().then((doc) => {
-            if (doc.exists) {
-                const categories = doc.data().data;
-                console.log("📥 تم جلب الأقسام المحفوظة");
-                populateCategorySelect(categories);
+        function setupExamUI() {
+            if (!examData || !examData.questions || examData.questions.length === 0) {
+                showNoExamScreen();
+                return;
+            }
+
+            document.getElementById('loadingScreen').classList.add('hidden');
+
+            // عرض الشعار
+            const logoContainer = document.getElementById('examLogoContainer');
+            const defaultIcon = document.getElementById('defaultIcon');
+            const logoImg = document.getElementById('examLogoImg');
+
+            if (examData.logo) {
+                logoImg.src = examData.logo;
+                logoContainer.classList.remove('hidden');
+                defaultIcon.classList.add('hidden');
             } else {
-                console.log("⚠️ لا توجد أقسام محفوظة بعد (يجب الدخول من البوت مرة واحدة على الأقل)");
+                logoContainer.classList.add('hidden');
+                defaultIcon.classList.remove('hidden');
             }
-        }).catch((err) => console.log("خطأ في جلب الأقسام:", err));
-    }
 
-    // 3. دالة مساعدة لملء القائمة (لمنع تكرار الكود)
-    function populateCategorySelect(categories) {
-        const select = document.getElementById('categorySelect');
-        select.innerHTML = '<option value="" disabled selected>🔻 اختر القسم</option>';
-        
-        categories.forEach(cat => {
-            const group = document.createElement('optgroup');
-            group.label = "📂 " + cat.n;
-            if (cat.s && cat.s.length > 0) {
-                cat.s.forEach(sub => {
-                    const option = document.createElement('option');
-                    option.value = sub.i;
-                    option.text = "📄 " + sub.n;
-                    group.appendChild(option);
-                });
-                select.appendChild(group);
+            // التحقق من الاختبار السابق
+            const user = window.Telegram?.WebApp?.initDataUnsafe?.user;
+            const userId = user ? user.id : 0;
+            const examKey = `exam_${examData.id}_${userId}`;
+
+            if (localStorage.getItem(examKey)) {
+                const prevData = JSON.parse(localStorage.getItem(examKey));
+                document.getElementById('prevScore').textContent = prevData.score + '%';
+                showScreen('alreadyTakenScreen');
+                return;
             }
-        });
-    }
 
+            // عرض معلومات الاختبار
+            document.getElementById('examTitle').textContent = examData.title;
+            document.getElementById('totalQuestions').textContent = examData.questions.length;
+            document.getElementById('examDuration').textContent = examData.duration ? 
+                examData.duration + ' دقيقة' : 'غير محددة';
 
-    // دالة تجهيز الواجهة (تم إصلاح الخطأ هنا)
-    function setupExamUI() {
-        if (!examData || examData.questions.length === 0) {
-            showNoExamScreen();
-            return;
+            showScreen('startScreen');
         }
+
+        // ═══════════════════════════════════════════════════════
+        //                  دوال العرض والتنقل
+        // ═══════════════════════════════════════════════════════
         
-        document.getElementById('loadingScreen').classList.add('hidden');
-
-        // التحقق من وجود شعار للاختبار وعرضه
-        const logoContainer = document.getElementById('examLogoContainer');
-        const defaultIcon = document.getElementById('defaultIcon');
-        const logoImg = document.getElementById('examLogoImg');
-
-        // examData.logo يأتي من قاعدة البيانات
-        if (examData.logo) {
-            logoImg.src = examData.logo;
-            logoContainer.classList.remove('hidden');
-            defaultIcon.classList.add('hidden'); // إخفاء الأيقونة العادية
-        } else {
-            logoContainer.classList.add('hidden');
-            defaultIcon.classList.remove('hidden');
-        }
-
-        // ... باقي الكود (التحقق من الاختبار السابق والعناوين) كما هو ...
-        const examKey = `exam_${examData.id}_${examData.user_id}`;
-        // ... (أكمل باقي الدالة كما كانت عندك) ...
-        if (localStorage.getItem(examKey)) {
-             // ... كود الشاشة المغلقة ...
-        } else {
-             document.getElementById('examTitle').textContent = examData.title;
-             // ... إلخ
-             showScreen('startScreen');
-        }
-    }
-
-
-    // ═══════════════════════════════════════════════════════
-    //                    دوال العرض والتنقل
-    // ═══════════════════════════════════════════════════════
-
-    function showScreen(screenId) {
-        // إخفاء جميع الشاشات أولاً كما في الكود السابق
-        document.querySelectorAll('.card, #examScreen').forEach(el => {
-            el.classList.add('hidden');
-        });
-        
-        // إظهار الشاشة المطلوبة
-        const targetScreen = document.getElementById(screenId);
-        if (targetScreen) targetScreen.classList.remove('hidden');
-
-        // 🔥 التعديل الجديد للتحكم في زر النقاط الثلاث 🔥
-        const menuBtn = document.querySelector('.menu-btn');
-        if (menuBtn) {
-            // إذا كانت الشاشة الحالية هي لوحة الإدارة، أظهر الزر
-            if (screenId === 'adminPanel') {
-                menuBtn.style.display = 'block';
-            } else {
-                // في أي شاشة أخرى (اختبار، نتيجة، الخ)، اخفِ الزر
-                menuBtn.style.display = 'none';
-                // إغلاق القائمة لو كانت مفتوحة عند الخروج
-                const menu = document.getElementById('dropdownMenu');
-                if (menu) menu.classList.remove('show');
-            }
-        }
-    }
-
-
-    function showNoExamScreen() {
-        showScreen('noExamScreen');
-        const container = document.getElementById('noExamScreen');
-        
-        // 1. تنظيف العناصر القديمة (بما فيها زر الأدمن لمنع التكرار)
-        const oldItems = container.querySelectorAll('.stats-card-btn, .my-exams-btn, #adminBtn');
-        oldItems.forEach(item => item.remove());
-
-        // 2. زر سجل اختباراتي (في المنتصف)
-        const examsCard = document.createElement('div');
-        examsCard.className = 'my-exams-btn';
-        examsCard.innerHTML = `<div style="font-size:30px">📋</div><h3 style="margin:0">سجل اختباراتي</h3><p style="font-size:12px; opacity:0.8; margin-top:5px">راجع نتائجك السابقة</p>`;
-        examsCard.onclick = openMyExams;
-        container.prepend(examsCard);
-
-        // 3. زر إحصائياتي (في المنتصف)
-        const statsCard = document.createElement('div');
-        statsCard.className = 'stats-card-btn';
-        statsCard.innerHTML = `<div style="font-size:30px">📊</div><h3 style="margin:0">إحصائياتي</h3>`;
-        statsCard.onclick = openMyStats;
-        container.prepend(statsCard);
-
-        // 🔥 4. استعادة زر لوحة التحكم (يظهر لك أنت فقط) 🔥
-        const user = window.Telegram.WebApp.initDataUnsafe?.user;
-        // تأكد أن الآي دي الخاص بك موجود في مصفوفة OWNERS في أعلى الملف
-        if (user && OWNERS.includes(user.id)) {
-            const adminBtn = document.createElement('button');
-            adminBtn.id = 'adminBtn';
-            adminBtn.className = 'btn btn-success btn-block';
-            adminBtn.style.marginTop = '25px';
-            adminBtn.style.boxShadow = '0 10px 20px rgba(39, 174, 96, 0.3)'; // ظل أخضر فخم
-            adminBtn.innerHTML = '🛠️ لوحة التحكم (إنشاء اختبار)';
-            adminBtn.onclick = () => showScreen('adminPanel');
+        function showScreen(screenId) {
+            // إخفاء جميع الشاشات
+            const allScreens = ['loadingScreen', 'noExamScreen', 'statsScreen', 'myExamsScreen', 
+                               'alreadyTakenScreen', 'startScreen', 'examScreen', 'resultScreen',
+                               'adminPanel', 'manageExamsScreen'];
             
-            // إضافة الزر في نهاية القائمة
-            container.appendChild(adminBtn);
-        }
-    }
+            allScreens.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.classList.add('hidden');
+            });
 
+            // إظهار الشاشة المطلوبة
+            const target = document.getElementById(screenId);
+            if (target) target.classList.remove('hidden');
 
-    // ═══════════════════════════════════════════════════════
-    //                    منطق الاختبار
-    // ═══════════════════════════════════════════════════════
-    
-    function startExam() {
-        showScreen('examScreen');
-        startTime = new Date();
-        userAnswers = [];
-        currentQuestion = 0;
-
-        if (examData.duration && examData.duration > 0) {
-            timeRemaining = examData.duration * 60;
-            startTimer();
-        } else {
-            document.getElementById('timerDisplay').textContent = '⏱️ --:--';
-        }
-        displayQuestion(0);
-    }
-
-    function startTimer() {
-        updateTimerDisplay();
-        timerInterval = setInterval(() => {
-            timeRemaining--;
-            updateTimerDisplay();
-            if (timeRemaining <= 0) {
-                clearInterval(timerInterval);
-                finishExam(true);
+            // التحكم في زر القائمة
+            const menuBtn = document.getElementById('menuBtn');
+            if (menuBtn) {
+                menuBtn.style.display = (screenId === 'adminPanel') ? 'block' : 'none';
             }
-        }, 1000);
-    }
 
-    function updateTimerDisplay() {
-        const minutes = Math.floor(timeRemaining / 60);
-        const seconds = timeRemaining % 60;
-        const display = document.getElementById('timerDisplay');
-        display.textContent = `⏱️ ${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-        if (timeRemaining <= 60) display.classList.add('danger');
-    }
-
-    function displayQuestion(index) {
-        const question = examData.questions[index];
-        currentQuestion = index;
-        selectedOption = null;
-
-        document.getElementById('questionBadge').textContent = `السؤال ${index + 1}`;
-        document.getElementById('questionText').textContent = question.text;
-        document.getElementById('questionCounter').textContent = `${index + 1} / ${examData.questions.length}`;
-        const progress = ((index + 1) / examData.questions.length) * 100;
-        document.getElementById('progressBar').style.width = progress + '%';
-
-        const container = document.getElementById('optionsContainer');
-        container.innerHTML = '';
-        const markers = ['أ', 'ب', 'ج', 'د', 'هـ', 'و'];
-        
-        question.options.forEach((option, i) => {
-            const optionEl = document.createElement('div');
-            optionEl.className = 'option';
-            optionEl.onclick = () => selectOption(i + 1, optionEl);
-            optionEl.innerHTML = `<div class="option-marker">${markers[i] || (i + 1)}</div><div class="option-text">${option}</div>`;
-            container.appendChild(optionEl);
-        });
-
-        const submitBtn = document.getElementById('submitBtn');
-        submitBtn.disabled = true;
-        submitBtn.textContent = (index === examData.questions.length - 1) ? 'إنهاء الاختبار ✅' : 'السؤال التالي ➡️';
-    }
-
-    function selectOption(optionNum, element) {
-        document.querySelectorAll('.option').forEach(opt => opt.classList.remove('selected'));
-        element.classList.add('selected');
-        selectedOption = optionNum;
-        document.getElementById('submitBtn').disabled = false;
-    }
-
-    function submitAnswer() {
-        if (selectedOption === null) return;
-        const question = examData.questions[currentQuestion];
-        const isCorrect = selectedOption === question.correct;
-
-        userAnswers.push({
-            questionId: question.id,
-            selected: selectedOption,
-            correct: question.correct,
-            isCorrect: isCorrect
-        });
-
-        const options = document.querySelectorAll('.option');
-        options.forEach((opt, i) => {
-            opt.classList.add('locked');
-            if (i + 1 === question.correct) opt.classList.add('correct');
-            else if (i + 1 === selectedOption && !isCorrect) opt.classList.add('wrong');
-        });
-
-        document.getElementById('submitBtn').disabled = true;
-
-        if (!isCorrect && question.explanations && question.explanations[selectedOption]) {
-            setTimeout(() => {
-                document.getElementById('explanationText').textContent = question.explanations[selectedOption];
-                document.getElementById('explanationModal').classList.remove('hidden');
-            }, 600);
-        } else {
-            showToast(isCorrect ? '✅ إجابة صحيحة!' : '❌ إجابة خاطئة!', isCorrect);
-            setTimeout(() => goToNextQuestion(), 1500);
+            // إغلاق القائمة المنسدلة
+            const menu = document.getElementById('dropdownMenu');
+            if (menu) menu.classList.remove('show');
         }
-    }
 
-    function closeExplanation() {
-        document.getElementById('explanationModal').classList.add('hidden');
-        goToNextQuestion();
-    }
+        function showNoExamScreen() {
+            showScreen('noExamScreen');
+            
+            const container = document.getElementById('userActionsContainer');
+            if (!container) return;
+            
+            container.innerHTML = '';
 
-    function goToNextQuestion() {
-        if (currentQuestion < examData.questions.length - 1) displayQuestion(currentQuestion + 1);
-        else finishExam(false);
-    }
+            // زر الإحصائيات
+            const statsCard = document.createElement('div');
+            statsCard.className = 'action-card-big stats';
+            statsCard.innerHTML = `
+                <div style="font-size: 35px; margin-bottom: 8px;">📊</div>
+                <div style="font-weight: bold; font-size: 16px;">إحصائياتي</div>
+            `;
+            statsCard.onclick = openMyStats;
+            container.appendChild(statsCard);
 
-    function showToast(message, success) {
-        const toast = document.createElement('div');
-        toast.className = `toast ${success ? 'success' : 'error'}`;
-        toast.textContent = message;
-        document.body.appendChild(toast);
-        setTimeout(() => toast.remove(), 1200);
-    }
+            // زر سجل الاختبارات
+            const examsCard = document.createElement('div');
+            examsCard.className = 'action-card-big exams';
+            examsCard.innerHTML = `
+                <div style="font-size: 35px; margin-bottom: 8px;">📋</div>
+                <div style="font-weight: bold; font-size: 16px;">سجل اختباراتي</div>
+                <div style="font-size: 12px; opacity: 0.8; margin-top: 5px;">راجع نتائجك السابقة</div>
+            `;
+            examsCard.onclick = openMyExams;
+            container.appendChild(examsCard);
+
+            // زر لوحة التحكم للأدمن
+            const user = window.Telegram?.WebApp?.initDataUnsafe?.user;
+            if (user && OWNERS.includes(user.id)) {
+                const adminBtn = document.createElement('div');
+                adminBtn.className = 'action-card-big';
+                adminBtn.style.background = 'linear-gradient(135deg, #11998e, #38ef7d)';
+                adminBtn.innerHTML = `
+                    <div style="font-size: 35px; margin-bottom: 8px;">🛠️</div>
+                    <div style="font-weight: bold; font-size: 16px;">لوحة التحكم</div>
+                    <div style="font-size: 12px; opacity: 0.8; margin-top: 5px;">إدارة وإنشاء الاختبارات</div>
+                `;
+                adminBtn.onclick = () => showScreen('adminPanel');
+                container.appendChild(adminBtn);
+            }
+        }
 
         // ═══════════════════════════════════════════════════════
-        //                    إنهاء الاختبار
+        //                   منطق الاختبار
         // ═══════════════════════════════════════════════════════
         
-        // متغير لحفظ البيانات لإرسالها للبوت
+        function startExam() {
+            showScreen('examScreen');
+            startTime = new Date();
+            userAnswers = [];
+            currentQuestion = 0;
 
+            if (examData.duration && examData.duration > 0) {
+                timeRemaining = examData.duration * 60;
+                startTimer();
+            } else {
+                document.getElementById('timerDisplay').textContent = '⏱️ --:--';
+            }
+
+            displayQuestion(0);
+        }
+
+        function startTimer() {
+            updateTimerDisplay();
+            timerInterval = setInterval(() => {
+                timeRemaining--;
+                updateTimerDisplay();
+                if (timeRemaining <= 0) {
+                    clearInterval(timerInterval);
+                    finishExam(true);
+                }
+            }, 1000);
+        }
+
+        function updateTimerDisplay() {
+            const minutes = Math.floor(timeRemaining / 60);
+            const seconds = timeRemaining % 60;
+            const display = document.getElementById('timerDisplay');
+            display.textContent = `⏱️ ${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            
+            if (timeRemaining <= 60) {
+                display.classList.add('danger');
+            } else {
+                display.classList.remove('danger');
+            }
+        }
+
+        function displayQuestion(index) {
+            const question = examData.questions[index];
+            currentQuestion = index;
+            selectedOption = null;
+
+            document.getElementById('questionBadge').textContent = `السؤال ${index + 1}`;
+            document.getElementById('questionText').textContent = question.text;
+            document.getElementById('questionCounter').textContent = `${index + 1} / ${examData.questions.length}`;
+            
+            const progress = ((index + 1) / examData.questions.length) * 100;
+            document.getElementById('progressBar').style.width = progress + '%';
+
+            const container = document.getElementById('optionsContainer');
+            container.innerHTML = '';
+            const markers = ['أ', 'ب', 'ج', 'د', 'هـ', 'و', 'ز', 'ح'];
+
+            question.options.forEach((option, i) => {
+                const optionEl = document.createElement('div');
+                optionEl.className = 'option';
+                optionEl.onclick = () => selectOption(i + 1, optionEl);
+                optionEl.innerHTML = `
+                    <div class="option-marker">${markers[i] || (i + 1)}</div>
+                    <div class="option-text">${option}</div>
+                `;
+                container.appendChild(optionEl);
+            });
+
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = (index === examData.questions.length - 1) ? 
+                'إنهاء الاختبار ✅' : 'السؤال التالي ➡️';
+        }
+
+        function selectOption(optionNum, element) {
+            document.querySelectorAll('.option').forEach(opt => opt.classList.remove('selected'));
+            element.classList.add('selected');
+            selectedOption = optionNum;
+            document.getElementById('submitBtn').disabled = false;
+        }
+
+        function submitAnswer() {
+            if (selectedOption === null) return;
+
+            const question = examData.questions[currentQuestion];
+            const isCorrect = selectedOption === question.correct;
+
+            userAnswers.push({
+                questionId: question.id,
+                selected: selectedOption,
+                correct: question.correct,
+                isCorrect: isCorrect
+            });
+
+            // إظهار النتيجة
+            const options = document.querySelectorAll('.option');
+            options.forEach((opt, i) => {
+                opt.classList.add('locked');
+                if (i + 1 === question.correct) {
+                    opt.classList.add('correct');
+                } else if (i + 1 === selectedOption && !isCorrect) {
+                    opt.classList.add('wrong');
+                }
+            });
+
+            document.getElementById('submitBtn').disabled = true;
+
+            // عرض التعليل إذا كانت الإجابة خاطئة
+            if (!isCorrect && question.explanations && question.explanations[selectedOption]) {
+                setTimeout(() => {
+                    document.getElementById('explanationText').textContent = question.explanations[selectedOption];
+                    document.getElementById('explanationModal').classList.remove('hidden');
+                }, 600);
+            } else {
+                showToast(isCorrect ? '✅ إجابة صحيحة!' : '❌ إجابة خاطئة!', isCorrect);
+                setTimeout(() => goToNextQuestion(), 1500);
+            }
+        }
+
+        function closeExplanation() {
+            document.getElementById('explanationModal').classList.add('hidden');
+            goToNextQuestion();
+        }
+
+        function goToNextQuestion() {
+            if (currentQuestion < examData.questions.length - 1) {
+                displayQuestion(currentQuestion + 1);
+            } else {
+                finishExam(false);
+            }
+        }
+
+        function showToast(message, success) {
+            const toast = document.createElement('div');
+            toast.className = `toast ${success ? 'success' : 'error'}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 1500);
+        }
+
+        // ═══════════════════════════════════════════════════════
+        //                   إنهاء الاختبار
+        // ═══════════════════════════════════════════════════════
+        
         function finishExam(timeout) {
             if (timerInterval) clearInterval(timerInterval);
 
-            // حساب الوقت والدرجات
             const endTime = new Date();
             const timeTakenSeconds = Math.floor((endTime - startTime) / 1000);
-            
+
             const totalQuestions = examData.questions.length;
             const correctCount = userAnswers.filter(a => a.isCorrect).length;
             const wrongCount = totalQuestions - correctCount;
             const scorePercent = Math.round((correctCount / totalQuestions) * 100);
 
-            // 1. تحديد أيقونة وحالة النتيجة
+            // تحديد الأيقونة
             let icon, title;
             if (scorePercent >= 90) { icon = '🏆'; title = 'ممتاز!'; }
             else if (scorePercent >= 75) { icon = '🌟'; title = 'جيد جداً!'; }
             else if (scorePercent >= 50) { icon = '✅'; title = 'ناجح'; }
             else { icon = '📚'; title = 'حاول مرة أخرى'; }
 
-            // 2. تحديث الشاشة بالأرقام
+            // تحديث الشاشة
             document.getElementById('resultIcon').textContent = icon;
             document.getElementById('resultTitle').textContent = title;
             document.getElementById('resultScore').textContent = scorePercent + '%';
             document.getElementById('statTotal').textContent = totalQuestions;
             document.getElementById('statCorrect').textContent = correctCount;
             document.getElementById('statWrong').textContent = wrongCount;
-            
+
             const mins = Math.floor(timeTakenSeconds / 60);
             const secs = timeTakenSeconds % 60;
             document.getElementById('statTime').textContent = 
                 `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
 
-            // 3. إرسال النتيجة للقناة فوراً (للحفظ في الإحصائيات)
+            // إرسال للقناة
             sendResultToChannel({
                 exam_id: examData.id,
                 exam_title: examData.title,
@@ -1866,11 +2091,10 @@
                 wrong: wrongCount,
                 total: totalQuestions,
                 time_taken: timeTakenSeconds,
-                timeout: timeout,
-                answers: userAnswers
+                timeout: timeout
             });
 
-            // 4. تخزين البيانات في متغير (في حال قرر الطالب العودة للبوت لاحقاً)
+            // حفظ النتيجة
             finalResultToBot = {
                 exam_id: examData.id,
                 user_id: examData.user_id,
@@ -1878,13 +2102,16 @@
                 correct: correctCount,
                 wrong: wrongCount,
                 total: totalQuestions,
-                time_taken: timeTakenSeconds,
-                answers: userAnswers
+                time_taken: timeTakenSeconds
             };
 
-            // حفظ محلي لمنع إعادة الامتحان
-            const examKey = `exam_${examData.id}_${examData.user_id}`;
+            // حفظ محلي
+            const user = window.Telegram?.WebApp?.initDataUnsafe?.user;
+            const userId = user ? user.id : 0;
+            const examKey = `exam_${examData.id}_${userId}`;
+            
             localStorage.setItem(examKey, JSON.stringify({
+                title: examData.title,
                 score: scorePercent,
                 correct: correctCount,
                 wrong: wrongCount,
@@ -1892,25 +2119,19 @@
                 date: new Date().toISOString()
             }));
 
-            // 5. عرض شاشة النتيجة (والبقاء فيها)
             showScreen('resultScreen');
         }
 
-        // ═══════════════════════════════════════════════════════
-        //                    إرسال للقناة
-        // ═══════════════════════════════════════════════════════
-        
         function sendResultToChannel(result) {
             const mins = Math.floor(result.time_taken / 60);
             const secs = result.time_taken % 60;
-            
+
             let statusIcon;
             if (result.score >= 90) statusIcon = '🏆';
             else if (result.score >= 75) statusIcon = '🌟';
             else if (result.score >= 50) statusIcon = '✅';
             else statusIcon = '❌';
 
-            // إضافة رابط المستخدم هنا
             const message = `
 📊 نتيجة اختبار جديدة
 ━━━━━━━━━━━━━━━━━━
@@ -1932,10 +2153,7 @@ ${result.timeout ? '⚠️ انتهى الوقت!' : ''}
 #نتيجة_اختبار #exam_${result.exam_id}
 `;
 
-            const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
-            
-            // استخدام fetch بدون انتظار للحفاظ على سرعة الإغلاق
-            fetch(url, {
+            fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -1943,649 +2161,702 @@ ${result.timeout ? '⚠️ انتهى الوقت!' : ''}
                     text: message,
                     parse_mode: 'HTML'
                 })
-            }).catch(e => console.log('Channel send error', e));
+            }).catch(e => console.log('Channel send error:', e));
         }
 
         // ═══════════════════════════════════════════════════════
-        //                    إغلاق التطبيق وإرسال البيانات
+        //                  إدارة الاختبارات
         // ═══════════════════════════════════════════════════════
         
-        // ═══════════════════════════════════════════════════════
-        //                    إغلاق التطبيق وإرسال البيانات
-        // ═══════════════════════════════════════════════════════
-        
-        // ═══════════════════════════════════════════════════════
-        //                    إغلاق التطبيق وإرسال البيانات (معدلة)
-        // ═══════════════════════════════════════════════════════
-        
-        function closeApp() {
-            // التأكد من أن تيليجرام متاح
-            if (window.Telegram && window.Telegram.WebApp) {
-                const tg = window.Telegram.WebApp;
-                
-                // إذا كانت هناك نتيجة، أرسلها
-                if (finalResultToBot) {
-                    try {
-                        // 1. تحويل البيانات لنص
-                        let dataString = JSON.stringify(finalResultToBot);
-                        
-                        // 2. التحقق من الحجم (تيليجرام يقبل 4096 بايت كحد أقصى)
-                        // نستخدم 4000 كحد آمن
-                        if (dataString.length > 4000) {
-                            // الحجم كبير! نحذف تفاصيل الإجابات ونرسل النتيجة فقط
-                            const smallData = {
-                                ...finalResultToBot,
-                                answers: [] // إفراغ التفاصيل لتقليل الحجم
-                            };
-                            dataString = JSON.stringify(smallData);
-                            // تنبيه المستخدم (اختياري)
-                            // alert("تم حفظ الدرجة فقط نظراً لطول الاختبار");
-                        }
+        async function openManageExams() {
+            showScreen('manageExamsScreen');
+            
+            const listContainer = document.getElementById('manageExamsList');
+            listContainer.innerHTML = '<div class="loading"><div class="spinner"></div><div class="loading-text">جاري التحميل...</div></div>';
 
-                        // 3. إرسال البيانات للبوت
-                        tg.sendData(dataString);
-                        
-                    } catch (e) {
-                        console.error("Error sending data:", e);
-                        // في حال فشل الإرسال لأي سبب، نغلق التطبيق فوراً
-                        tg.close();
+            try {
+                const snapshot = await db.collection('exams').orderBy('created_at', 'desc').get();
+
+                if (snapshot.empty) {
+                    listContainer.innerHTML = `
+                        <div class="empty-state">
+                            <div class="icon">📭</div>
+                            <h3>لا توجد اختبارات</h3>
+                            <p>لم يتم إنشاء أي اختبارات بعد</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                listContainer.innerHTML = '';
+
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    const questionsCount = data.questions ? data.questions.length : 0;
+                    const createdAt = data.created_at ? 
+                        new Date(data.created_at.toDate()).toLocaleDateString('ar-EG') : 'غير محدد';
+
+                    const card = document.createElement('div');
+                    card.className = 'exam-manage-card';
+                    card.id = `exam-card-${doc.id}`;
+                    card.innerHTML = `
+                        <div class="exam-manage-info">
+                            <div class="exam-manage-title">${data.title || 'بدون عنوان'}</div>
+                            <div class="exam-manage-meta">
+                                <span>❓ ${questionsCount} سؤال</span>
+                                <span>📅 ${createdAt}</span>
+                                ${data.duration ? `<span>⏱️ ${data.duration} د</span>` : ''}
+                            </div>
+                        </div>
+                        <div class="exam-manage-actions">
+                            <button class="btn-icon delete" onclick="deleteExam('${doc.id}')" title="حذف">
+                                🗑️
+                            </button>
+                        </div>
+                    `;
+                    listContainer.appendChild(card);
+                });
+
+            } catch (e) {
+                console.error('Error loading exams:', e);
+                listContainer.innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">⚠️</div>
+                        <h3>حدث خطأ</h3>
+                        <p>${e.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        async function deleteExam(examId) {
+            if (!confirm('⚠️ هل أنت متأكد من حذف هذا الاختبار؟\nلا يمكن التراجع عن هذا الإجراء!')) {
+                return;
+            }
+
+            try {
+                await db.collection('exams').doc(examId).delete();
+                
+                // حذف البطاقة من الواجهة
+                const card = document.getElementById(`exam-card-${examId}`);
+                if (card) {
+                    card.style.animation = 'fadeOut 0.3s ease';
+                    setTimeout(() => card.remove(), 300);
+                }
+
+                showToast('✅ تم حذف الاختبار بنجاح', true);
+
+                // التحقق إذا لم يبقَ أي اختبارات
+                setTimeout(() => {
+                    const remaining = document.querySelectorAll('.exam-manage-card');
+                    if (remaining.length === 0) {
+                        document.getElementById('manageExamsList').innerHTML = `
+                            <div class="empty-state">
+                                <div class="icon">📭</div>
+                                <h3>لا توجد اختبارات</h3>
+                            </div>
+                        `;
                     }
-                } else {
-                    // إغلاق عادي (في حال لم يدخل اختبار أو خرج قبل البدء)
-                    tg.close();
+                }, 350);
+
+            } catch (e) {
+                console.error('Error deleting exam:', e);
+                alert('❌ فشل حذف الاختبار: ' + e.message);
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════
+        //                  إنشاء الاختبارات
+        // ═══════════════════════════════════════════════════════
+        
+        function toggleCreateForm() {
+            const form = document.getElementById('createExamForm');
+            const fabBtn = document.getElementById('fabBtn');
+            const saveBtn = document.getElementById('saveExamBtn');
+
+            const isHidden = form.classList.contains('hidden');
+            
+            if (isHidden) {
+                form.classList.remove('hidden');
+                fabBtn.classList.remove('hidden');
+                saveBtn.classList.remove('hidden');
+                
+                // إضافة سؤالين افتراضيين
+                if (document.querySelectorAll('.edit-card').length === 0) {
+                    addQuestionCard();
+                    addQuestionCard();
                 }
             } else {
-                // إذا لم يكن داخل تيليجرام
+                form.classList.add('hidden');
+                fabBtn.classList.add('hidden');
+                saveBtn.classList.add('hidden');
+            }
+        }
+
+        function toggleDurationInput() {
+            const isChecked = document.getElementById('timerToggle').checked;
+            const field = document.getElementById('durationInputContainer');
+            field.classList.toggle('active', isChecked);
+        }
+
+        function toggleExplanationFields() {
+            const isChecked = document.getElementById('explanationToggle').checked;
+            document.querySelectorAll('.opt-expl').forEach(input => {
+                const row = input.closest('.option-row');
+                const isCorrect = row?.querySelector('input[type="radio"]:checked');
+                input.style.display = (isChecked && !isCorrect) ? 'block' : 'none';
+            });
+        }
+
+        function addQuestionCard() {
+            qCounter++;
+            const container = document.getElementById('questionsContainer');
+            
+            const card = document.createElement('div');
+            card.className = 'edit-card';
+            card.id = `card_${qCounter}`;
+
+            card.innerHTML = `
+                <button class="remove-q-btn" onclick="removeQuestionCard(this)">×</button>
+                <label>السؤال ${qCounter}:</label>
+                <textarea class="admin-input q-text" rows="3" placeholder="اكتب نص السؤال هنا..."></textarea>
+                
+                <div class="options-wrapper" id="options_wrapper_${qCounter}"></div>
+
+                <button class="btn btn-outline" style="margin-top: 12px; font-size: 13px; padding: 10px 20px;" 
+                        onclick="addOption(${qCounter})">
+                    ➕ إضافة اختيار
+                </button>
+            `;
+
+            container.appendChild(card);
+
+            // إضافة خيارين افتراضيين
+            addOption(qCounter);
+            addOption(qCounter);
+
+            // تمرير للبطاقة
+            setTimeout(() => {
+                card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 100);
+        }
+
+        function removeQuestionCard(btn) {
+            const card = btn.closest('.edit-card');
+            if (document.querySelectorAll('.edit-card').length <= 1) {
+                alert('⚠️ يجب وجود سؤال واحد على الأقل!');
+                return;
+            }
+            card.style.animation = 'fadeOut 0.3s ease';
+            setTimeout(() => card.remove(), 300);
+        }
+
+        function addOption(cardId) {
+            const wrapper = document.getElementById(`options_wrapper_${cardId}`);
+            if (!wrapper) return;
+
+            const optCount = wrapper.children.length + 1;
+            const isExpOn = document.getElementById('explanationToggle')?.checked;
+
+            const div = document.createElement('div');
+            div.className = 'option-row';
+            div.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                    <input type="radio" name="rad_${cardId}" value="${optCount}" 
+                           onchange="syncExplVisibility(${cardId})" 
+                           style="transform: scale(1.3); cursor: pointer;">
+                    <input type="text" class="admin-input opt-text" placeholder="نص الاختيار ${optCount}" 
+                           style="flex: 1; margin: 0;">
+                    <button onclick="removeOption(this, ${cardId})" 
+                            style="background: none; border: none; color: var(--danger); cursor: pointer; font-size: 22px; padding: 0 8px;">
+                        ×
+                    </button>
+                </div>
+                <input type="text" class="admin-input opt-expl" 
+                       placeholder="💡 تعليل الخطأ (يظهر للطالب إذا اختار هذا الجواب)" 
+                       style="font-size: 13px; margin: 0; display: ${isExpOn ? 'block' : 'none'};">
+            `;
+
+            wrapper.appendChild(div);
+            syncExplVisibility(cardId);
+        }
+
+        function removeOption(btn, cardId) {
+            const row = btn.closest('.option-row');
+            const wrapper = row.parentElement;
+
+            if (wrapper.children.length <= 2) {
+                alert('⚠️ يجب وجود خيارين على الأقل!');
+                return;
+            }
+
+            row.remove();
+            updateOptionValues(cardId);
+        }
+
+        function updateOptionValues(cardId) {
+            const wrapper = document.getElementById(`options_wrapper_${cardId}`);
+            if (!wrapper) return;
+
+            const rows = wrapper.querySelectorAll('.option-row');
+            rows.forEach((row, index) => {
+                const radio = row.querySelector('input[type="radio"]');
+                const textInput = row.querySelector('.opt-text');
+                if (radio) radio.value = index + 1;
+                if (textInput) textInput.placeholder = `نص الاختيار ${index + 1}`;
+            });
+
+            syncExplVisibility(cardId);
+        }
+
+        function syncExplVisibility(cardId) {
+            const isToggleOn = document.getElementById('explanationToggle')?.checked;
+            const wrapper = document.getElementById(`options_wrapper_${cardId}`);
+            if (!wrapper) return;
+
+            wrapper.querySelectorAll('.option-row').forEach(row => {
+                const radio = row.querySelector('input[type="radio"]');
+                const explInput = row.querySelector('.opt-expl');
+                if (explInput) {
+                    explInput.style.display = (isToggleOn && !radio?.checked) ? 'block' : 'none';
+                }
+            });
+        }
+
+        async function saveExamToCloud() {
+            const title = document.getElementById('examTitleInput').value.trim();
+            const subId = document.getElementById('selectedCategoryId').value;
+
+            if (!title) {
+                alert('⚠️ يرجى كتابة عنوان الاختبار!');
+                return;
+            }
+
+            if (!subId) {
+                alert('⚠️ يرجى اختيار القسم!');
+                return;
+            }
+
+            const cards = document.querySelectorAll('.edit-card');
+            if (cards.length === 0) {
+                alert('⚠️ أضف سؤالاً واحداً على الأقل!');
+                return;
+            }
+
+            document.getElementById('loadingScreen').classList.remove('hidden');
+
+            try {
+                const questions = [];
+
+                for (let i = 0; i < cards.length; i++) {
+                    const card = cards[i];
+                    const text = card.querySelector('.q-text').value.trim();
+
+                    if (!text) throw new Error(`السؤال رقم ${i + 1} فارغ!`);
+
+                    const rows = card.querySelectorAll('.option-row');
+                    const selectedRadio = card.querySelector('input[type="radio"]:checked');
+
+                    if (!selectedRadio) {
+                        throw new Error(`السؤال رقم ${i + 1}: لم تحدد الإجابة الصحيحة!`);
+                    }
+
+                    const correctIndex = parseInt(selectedRadio.value);
+                    const optionsList = [];
+                    const explanationsMap = {};
+
+                    rows.forEach((row, idx) => {
+                        const optText = row.querySelector('.opt-text').value.trim();
+                        const optExpl = row.querySelector('.opt-expl').value.trim();
+                        const currentIdx = idx + 1;
+
+                        if (!optText) throw new Error(`يوجد خيار فارغ في السؤال رقم ${i + 1}`);
+
+                        optionsList.push(optText);
+
+                        if (currentIdx !== correctIndex && optExpl) {
+                            explanationsMap[currentIdx] = optExpl;
+                        }
+                    });
+
+                    questions.push({
+                        text: text,
+                        options: optionsList,
+                        correct: correctIndex,
+                        explanations: explanationsMap
+                    });
+                }
+
+                const durationToggle = document.getElementById('timerToggle');
+                const durationVal = (durationToggle?.checked) ?
+                    (parseInt(document.getElementById('examDurationInput').value) || 0) : 0;
+
+                // حفظ في Firebase
+                const docRef = await db.collection("exams").add({
+                    title: title,
+                    duration: durationVal,
+                    questions: questions,
+                    logo: currentExamLogo || null,
+                    created_at: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                // إرسال للبوت
+                const dataToSend = JSON.stringify({
+                    type: "cloud_exam",
+                    exam_id: docRef.id,
+                    title: title,
+                    target_sub_id: subId
+                });
+
+                if (window.Telegram?.WebApp) {
+                    alert("✅ تم حفظ الاختبار ونشره بنجاح!");
+                    window.Telegram.WebApp.sendData(dataToSend);
+                } else {
+                    document.getElementById('loadingScreen').classList.add('hidden');
+                    alert('✅ تم الحفظ! معرف الاختبار: ' + docRef.id);
+                }
+
+            } catch (e) {
+                console.error('Save error:', e);
+                document.getElementById('loadingScreen').classList.add('hidden');
+                alert('❌ خطأ: ' + e.message);
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════
+        //                 الإحصائيات والسجلات
+        // ═══════════════════════════════════════════════════════
+        
+        async function openMyStats() {
+            showScreen('statsScreen');
+
+            let taken = 0, totalScore = 0, takenIds = [];
+
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key?.startsWith('exam_')) {
+                    taken++;
+                    try {
+                        const d = JSON.parse(localStorage.getItem(key));
+                        totalScore += parseFloat(d.score || 0);
+                        takenIds.push(key.split('_')[1]);
+                    } catch (e) {}
+                }
+            }
+
+            document.getElementById('stTaken').textContent = taken;
+            document.getElementById('stAvg').textContent = taken > 0 ? Math.round(totalScore / taken) + '%' : '0%';
+
+            try {
+                if (db) {
+                    const snap = await db.collection("exams").get();
+                    let pending = 0;
+                    snap.forEach(doc => {
+                        if (!takenIds.includes(doc.id)) pending++;
+                    });
+                    document.getElementById('stPending').textContent = pending;
+                }
+            } catch (e) {
+                document.getElementById('stPending').textContent = '-';
+            }
+        }
+
+        function openMyExams() {
+            showScreen('myExamsScreen');
+
+            const listContainer = document.getElementById('examsHistoryList');
+            listContainer.innerHTML = '';
+
+            let hasExams = false;
+
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key?.startsWith('exam_')) {
+                    hasExams = true;
+                    try {
+                        const data = JSON.parse(localStorage.getItem(key));
+                        const examId = key.split('_')[1];
+
+                        const item = document.createElement('div');
+                        item.className = 'exam-manage-card';
+                        item.innerHTML = `
+                            <div class="exam-manage-info">
+                                <div class="exam-manage-title">${data.title || 'اختبار ' + examId}</div>
+                                <div class="exam-manage-meta">
+                                    <span>📊 ${data.score}%</span>
+                                    <span>✅ ${data.correct}</span>
+                                    <span>❌ ${data.wrong}</span>
+                                    <span>📅 ${new Date(data.date).toLocaleDateString('ar-EG')}</span>
+                                </div>
+                            </div>
+                            <button class="btn btn-outline" style="padding: 8px 15px; font-size: 12px;" 
+                                    onclick="retakeExam('${examId}')">
+                                🔄 إعادة
+                            </button>
+                        `;
+                        listContainer.appendChild(item);
+                    } catch (e) {}
+                }
+            }
+
+            if (!hasExams) {
+                listContainer.innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">📭</div>
+                        <h3>لا توجد اختبارات</h3>
+                        <p>لم تقم بإجراء أي اختبارات بعد</p>
+                    </div>
+                `;
+            }
+        }
+
+        function retakeExam(examId) {
+            if (!confirm('⚠️ هل تريد مسح نتيجتك وإعادة الاختبار؟')) return;
+
+            const user = window.Telegram?.WebApp?.initDataUnsafe?.user;
+            const userId = user ? user.id : 0;
+            const examKey = `exam_${examId}_${userId}`;
+
+            localStorage.removeItem(examKey);
+
+            const url = new URL(window.location.href);
+            url.searchParams.set('exam_id', examId);
+            window.location.href = url.toString();
+        }
+
+        // ═══════════════════════════════════════════════════════
+        //                  دوال الواجهة
+        // ═══════════════════════════════════════════════════════
+        
+        function toggleMenu() {
+            document.getElementById('dropdownMenu').classList.toggle('show');
+        }
+
+        function toggleNightMode() {
+            document.body.classList.toggle('night-mode');
+            const isNight = document.body.classList.contains('night-mode');
+            document.getElementById('themeBtn').textContent = isNight ? '☀️' : '🌙';
+            localStorage.setItem('nightMode', isNight);
+        }
+
+        function closeApp() {
+            if (window.Telegram?.WebApp) {
+                if (finalResultToBot) {
+                    try {
+                        let dataString = JSON.stringify(finalResultToBot);
+                        if (dataString.length > 4000) {
+                            dataString = JSON.stringify({ ...finalResultToBot, answers: [] });
+                        }
+                        window.Telegram.WebApp.sendData(dataString);
+                    } catch (e) {
+                        window.Telegram.WebApp.close();
+                    }
+                } else {
+                    window.Telegram.WebApp.close();
+                }
+            } else {
                 window.close();
                 history.back();
             }
         }
 
         // ═══════════════════════════════════════════════════════
-        //               منطق لوحة التحكم المتقدمة (أكواد الأدمن)
+        //                  نظام الخطوط
         // ═══════════════════════════════════════════════════════
+        
+        function loadCustomFont() {
+            if (!db) return;
 
-        let qCounter = 0;
-
-        // 1. دالة إظهار/إخفاء حقل الوقت
-        function toggleDurationInput() {
-            const isChecked = document.getElementById('timerToggle').checked;
-            const field = document.getElementById('durationInputContainer');
-            if (isChecked) field.classList.add('active');
-            else field.classList.remove('active');
-        }
-
-        // 2. دالة إظهار/إخفاء حقول التعليل
-        // 1. دالة إظهار/إخفاء حقول التعليل (محدثة)
-        function toggleExplanationFields() {
-            const isChecked = document.getElementById('explanationToggle').checked;
-            const allExpls = document.querySelectorAll('.opt-expl');
-            
-            allExpls.forEach(input => {
-                if (!isChecked) {
-                    input.style.display = 'none'; // إخفاء الكل فوراً
-                } else {
-                    // إذا كان الزر مفعل، نظهر فقط الحقول التي ليست للإجابة الصحيحة
-                    const row = input.closest('.option-row');
-                    const isCorrect = row.querySelector('input[type="radio"]').checked;
-                    input.style.display = isCorrect ? 'none' : 'block';
+            db.collection('settings').doc('global_config').get().then(doc => {
+                if (doc.exists && doc.data().customFont) {
+                    applyCustomFont(doc.data().customFont);
                 }
-            });
+            }).catch(e => console.log('Font load error:', e));
         }
 
-
-        // 3. دالة إضافة بطاقة سؤال جديدة
-        // ═══════════════════════════════════════════════════════
-        //           نظام الأسئلة الديناميكي (الكود الجديد)
-        // ═══════════════════════════════════════════════════════
-
-        // دالة إنشاء بطاقة السؤال
-        function addQuestionCard() {
-            qCounter++;
-            const container = document.getElementById('questionsContainer');
-            const card = document.createElement('div');
-            card.className = 'edit-card';
-            card.id = `card_${qCounter}`; // معرف فريد للبطاقة
-            
-            // الهيكل الأساسي للسؤال (بدون خيارات ثابتة)
-            card.innerHTML = `
-                <button class="remove-q-btn" onclick="this.parentElement.remove()">×</button>
-                <label class="input-label">السؤال ${qCounter}:</label>
-                <textarea class="form-input q-text" rows="2" placeholder="اكتب نص السؤال هنا..."></textarea>
-                
-                <div class="options-wrapper" id="options_wrapper_${qCounter}"></div>
-
-                <button class="btn btn-outline" style="margin-top:10px; font-size:12px; padding:8px 15px; width:auto; border-style:dashed;" onclick="addOption(${qCounter})">
-                    ➕ إضافة اختيار
-                </button>
-            `;
-            container.appendChild(card);
-            
-            // إضافة خيارين افتراضيين عند إنشاء السؤال
-            addOption(qCounter);
-            addOption(qCounter);
-            
-            // تمرير الشاشة للأسفل
-            setTimeout(() => {
-                 card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }, 100);
+        function triggerFontUpload() {
+            document.getElementById('fontFileInput').click();
+            toggleMenu();
         }
 
-        // دالة مساعدة: إضافة سطر خيار جديد
-        // 1. الدالة المحدثة لإضافة خيار (تراقب التغييرات لإخفاء التعليل)
-        function addOption(cardId) {
-            const wrapper = document.getElementById(`options_wrapper_${cardId}`);
-            if (!wrapper) return;
-            const optCount = wrapper.children.length + 1;
-            
-            const div = document.createElement('div');
-            div.className = 'option-row';
-            div.style.cssText = "background: #f8f9fa; padding: 10px; border-radius: 8px; margin-bottom: 8px; border: 1px solid #eee; position: relative;";
-            
-            div.innerHTML = `
-                <div style="display:flex; align-items:center; gap:8px; margin-bottom:5px;">
-                    <input type="radio" name="rad_${cardId}" value="${optCount}" 
-                           onchange="syncExplVisibility(${cardId})" 
-                           style="transform:scale(1.2); cursor:pointer;">
-                    
-                    <input type="text" class="admin-input opt-text" placeholder="نص الاختيار" style="flex:1; margin:0;">
-                    
-                    <button onclick="removeOption(this)" style="background:none; border:none; color:red; cursor:pointer; font-size:20px; padding:0 5px;">×</button>
-                </div>
-                
-                <input type="text" class="admin-input opt-expl" placeholder="💡 تعليل الخطأ (يظهر للطالب إذا اختار هذا الجواب)" 
-                       style="font-size:12px; background:white; margin-top:5px; margin-bottom:0; display:none;">
-            `;
-            wrapper.appendChild(div);
-            
-            updateOptionValues(cardId);
-            syncExplVisibility(cardId); // مزامنة الحالة فور الإضافة
-        }
+        function handleFontUpload(input) {
+            const file = input.files[0];
+            if (!file) return;
 
-        // 2. دالة المزامنة: تتحكم في ظهور المربع بناءً على (الزر الرئيسي + هل الإجابة صحيحة)
-        function syncExplVisibility(cardId) {
-            const isToggleOn = document.getElementById('explanationToggle').checked;
-            const wrapper = document.getElementById(`options_wrapper_${cardId}`);
-            if (!wrapper) return;
-
-            const rows = wrapper.querySelectorAll('.option-row');
-            rows.forEach(row => {
-                const radio = row.querySelector('input[type="radio"]');
-                const explInput = row.querySelector('.opt-expl');
-                
-                if (!isToggleOn) {
-                    explInput.style.display = 'none'; // مخفي لأن الزر العام مغلق
-                } else {
-                    // يظهر فقط إذا لم يكن هو الخيار المختار كصحيح
-                    explInput.style.display = radio.checked ? 'none' : 'block';
-                }
-            });
-        }
-
-        // دالة مساعدة: حذف خيار
-        function removeOption(btn) {
-            const row = btn.closest('.option-row');
-            const wrapper = row.parentElement;
-            
-            // منع حذف كل الخيارات (يجب بقاء خيارين على الأقل)
-            if (wrapper.children.length <= 2) {
-                alert("⚠️ يجب أن يكون هناك خياران على الأقل!");
+            if (file.size > 800 * 1024) {
+                alert('⚠️ ملف الخط كبير جداً! (الحد الأقصى 800KB)');
                 return;
             }
-            
-            const wrapperId = wrapper.id.split('_')[2]; // استخراج رقم السؤال
-            row.remove();
-            updateOptionValues(wrapperId);
-        }
 
-        // دالة مساعدة: إعادة ترتيب أرقام الخيارات بعد الحذف
-        // الدالة المحدثة لإعادة ترتيب الخيارات ومزامنة التعليلات
-        function updateOptionValues(cardId) {
-            const wrapper = document.getElementById(`options_wrapper_${cardId}`);
-            if (!wrapper) return;
-            
-            const rows = wrapper.querySelectorAll('.option-row');
-            
-            rows.forEach((row, index) => {
-                const radio = row.querySelector('input[type="radio"]');
-                // تحديث قيمة الراديو لتظل مرتبة 1, 2, 3...
-                radio.value = index + 1; 
-            });
+            document.getElementById('loadingScreen').classList.remove('hidden');
 
-            // 🔥 أهم سطر: مزامنة ظهور التعليلات بناءً على الترتيب الجديد والإجابة المختارة
-            if (typeof syncExplVisibility === 'function') {
-                syncExplVisibility(cardId);
-            }
-        }
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const fontData = e.target.result;
 
-
-
-        // 4. دالة الحفظ وإرسال الاختبار للبوت (نسخة التصحيح)
-    // دالة الحفظ المعدلة (لتقرأ النظام الجديد الديناميكي)
-    async function saveExamToCloud() {
-        const title = document.getElementById('examTitleInput').value;
-        const subId = document.getElementById('categorySelect').value;
-        
-        if (!title || !subId) {
-            alert("⚠️ يرجى ملء العنوان واختيار القسم!");
-            return;
-        }
-
-        const cards = document.querySelectorAll('.edit-card');
-        if (cards.length === 0) return alert("⚠️ أضف سؤالاً واحداً على الأقل");
-
-        // إظهار شاشة التحميل
-        document.getElementById('loadingScreen').classList.remove('hidden');
-        
-        try {
-            const questions = [];
-            
-            // الدوران على كل بطاقة سؤال
-            for (let i = 0; i < cards.length; i++) {
-                const card = cards[i];
-                const text = card.querySelector('.q-text').value.trim();
-                
-                if (!text) throw new Error(`السؤال رقم ${i+1} فارغ!`);
-
-                // جلب جميع صفوف الخيارات داخل هذا السؤال
-                const rows = card.querySelectorAll('.option-row');
-                
-                // التأكد من اختيار إجابة صحيحة
-                const selectedRadio = card.querySelector('input[type="radio"]:checked');
-                if (!selectedRadio) {
-                    throw new Error(`السؤال رقم ${i+1}: لم تحدد الإجابة الصحيحة!`);
-                }
-                
-                // القيمة المختارة (1, 2, 3...)
-                const correctIndex = parseInt(selectedRadio.value); 
-
-                const optionsList = [];
-                const explanationsMap = {};
-
-                // الدوران على كل خيار لاستخراج النص والتعليل
-                rows.forEach((row, idx) => {
-                    const optText = row.querySelector('.opt-text').value.trim();
-                    const optExpl = row.querySelector('.opt-expl').value.trim();
-                    const currentIdx = idx + 1; // الترتيب الحالي (1-based)
-
-                    if (!optText) throw new Error(`يوجد خيار فارغ في السؤال رقم ${i+1}`);
-                    
-                    optionsList.push(optText);
-                    
-                    // حفظ التعليل فقط إذا كان الخيار "خطأ" وتمت كتابة تعليل له
-                    if (currentIdx !== correctIndex && optExpl) {
-                        explanationsMap[currentIdx] = optExpl;
-                    }
+                db.collection('settings').doc('global_config').set({
+                    customFont: fontData,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                }, { merge: true }).then(() => {
+                    applyCustomFont(fontData);
+                    document.getElementById('loadingScreen').classList.add('hidden');
+                    alert('✅ تم تغيير الخط بنجاح!');
+                }).catch(err => {
+                    document.getElementById('loadingScreen').classList.add('hidden');
+                    alert('❌ خطأ: ' + err.message);
                 });
-
-                // إضافة السؤال للقائمة النهائية
-                questions.push({
-                    text: text,
-                    options: optionsList,
-                    correct: correctIndex,
-                    explanations: explanationsMap
-                });
-            }
-
-            // قراءة المدة الزمنية
-            const durationToggle = document.getElementById('timerToggle');
-            const durationVal = (durationToggle && durationToggle.checked) 
-                                ? (parseInt(document.getElementById('examDurationInput').value) || 0) 
-                                : 0;
-
-            // 🔥 إرسال البيانات إلى Firebase (مع الصورة)
-            const docRef = await db.collection("exams").add({
-                title: title,
-                duration: durationVal,
-                questions: questions,
-                logo: currentExamLogo, // 👈 هذا هو السطر الجديد الذي يحفظ الصورة
-                created_at: firebase.firestore.FieldValue.serverTimestamp()
-            });
-
-            // تجهيز البيانات لإعادتها للبوت
-            const dataToSend = JSON.stringify({
-                type: "cloud_exam",
-                exam_id: docRef.id,
-                title: title,
-                target_sub_id: subId
-            });
-
-            // إرسال للبوت
-            if (window.Telegram && window.Telegram.WebApp) {
-                alert("✅ تم حفظ الاختبار ونشره بنجاح!");
-                window.Telegram.WebApp.sendData(dataToSend);
-            } else {
-                alert('✅ تم الحفظ (وضع المعاينة)! ID: ' + docRef.id);
-                document.getElementById('loadingScreen').classList.add('hidden');
-            }
-
-        } catch (e) {
-            console.error(e);
-            alert("❌ خطأ: " + e.message);
-            document.getElementById('loadingScreen').classList.add('hidden');
-        }
-    }
-
-
-    // ════════════ دوال الواجهة الجديدة والخطوط ════════════
-    
-    function toggleMenu() {
-        const menu = document.getElementById('dropdownMenu');
-        menu.classList.toggle('show');
-    }
-
-    // إظهار وإخفاء فورم إنشاء الاختبار
-    function toggleCreateForm() {
-        const form = document.getElementById('createExamForm');
-        form.style.display = (form.style.display === 'block') ? 'none' : 'block';
-    }
-
-    // فتح نافذة اختيار الملف
-    function triggerFontUpload() {
-        document.getElementById('fontFileInput').click();
-        toggleMenu(); 
-    }
-
-    // معالجة ملف الخط وتطبيقه
-    // معالجة ملف الخط وحفظه في قاعدة البيانات للجميع
-    function handleFontUpload(input) {
-        const file = input.files[0];
-        if (!file) return;
-
-        // التحقق من الحجم (يجب أن يكون أقل من 800 كيلوبايت لقاعدة البيانات)
-        if (file.size > 800 * 1024) {
-            alert("⚠️ ملف الخط كبير جداً! (يجب أن يكون أقل من 800kb)\nحاول استخدام ملف بصيغة WOFF2 فهي أخف.");
-            return;
+            };
+            reader.readAsDataURL(file);
         }
 
-        // إظهار شاشة التحميل لأن الرفع قد يأخذ ثواني
-        document.getElementById('loadingScreen').classList.remove('hidden');
-
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const fontData = e.target.result;
-            
-            // حفظ الخط في قاعدة البيانات (Firestore) ليراه الجميع
-            db.collection('settings').doc('global_config').set({
-                customFont: fontData,
-                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-            }, { merge: true })
-            .then(() => {
-                // تطبيق الخط فوراً عندك
-                applyCustomFont(fontData);
-                document.getElementById('loadingScreen').classList.add('hidden');
-                alert("✅ تم تعميم الخط على جميع المستخدمين بنجاح!");
-            })
-            .catch((error) => {
-                console.error("Error saving font: ", error);
-                document.getElementById('loadingScreen').classList.add('hidden');
-                alert("❌ حدث خطأ أثناء رفع الخط: " + error.message);
-            });
-        };
-        reader.readAsDataURL(file);
-    }
-
-
-    // دالة حقن الخط في الصفحة
-    function applyCustomFont(base64Data) {
-        // حذف الستايل القديم إن وجد
-        const oldStyle = document.getElementById('custom-font-style');
-        if (oldStyle) oldStyle.remove();
-
-        const style = document.createElement('style');
-        style.id = 'custom-font-style';
-        style.textContent = `
-            @font-face { font-family: 'UserFont'; src: url('${base64Data}'); }
-            body, button, input, select, textarea, .app-title {
-                font-family: 'UserFont', sans-serif !important;
-            }
-        `;
-        document.head.appendChild(style);
-    }
-
-    // استعادة الخط الأصلي
-    // استعادة الخط الأصلي وحذفه من السيرفر
-    function resetFont() {
-        if (!confirm("هل أنت متأكد؟ سيعود الخط الافتراضي لجميع المستخدمين.")) return;
-        
-        document.getElementById('loadingScreen').classList.remove('hidden');
-        
-        // حذف الحقل من قاعدة البيانات
-        db.collection('settings').doc('global_config').update({
-            customFont: firebase.firestore.FieldValue.delete()
-        }).then(() => {
-            const oldStyle = document.getElementById('custom-font-style');
+        function applyCustomFont(base64Data) {
+            let oldStyle = document.getElementById('custom-font-style');
             if (oldStyle) oldStyle.remove();
-            toggleMenu();
-            document.getElementById('loadingScreen').classList.add('hidden');
-            alert("🔄 تم استعادة الخط الافتراضي للجميع.");
-        }).catch((error) => {
-            alert("خطأ: " + error.message);
-            document.getElementById('loadingScreen').classList.add('hidden');
-        });
-    }
 
-
-    function toggleNightMode() {
-        document.body.classList.toggle('night-mode');
-        const isNight = document.body.classList.contains('night-mode');
-        document.getElementById('themeBtn').textContent = isNight ? '☀️' : '🌙';
-        localStorage.setItem('nightMode', isNight);
-    }
-
-    async function openMyStats() {
-        showScreen('statsScreen');
-        let taken = 0, totalScore = 0, takenIds = [];
-        for (let i = 0; i < localStorage.length; i++) {
-            let key = localStorage.key(i);
-            if (key && key.startsWith('exam_')) {
-                taken++;
-                try {
-                    let d = JSON.parse(localStorage.getItem(key));
-                    totalScore += parseFloat(d.score || 0);
-                    takenIds.push(key.split('_')[1]);
-                } catch(e) {}
-            }
+            const style = document.createElement('style');
+            style.id = 'custom-font-style';
+            style.textContent = `
+                @font-face { font-family: 'UserFont'; src: url('${base64Data}'); }
+                body, button, input, select, textarea, .app-title { font-family: 'UserFont', sans-serif !important; }
+            `;
+            document.head.appendChild(style);
         }
-        document.getElementById('stTaken').textContent = taken;
-        document.getElementById('stAvg').textContent = taken > 0 ? Math.round(totalScore/taken) + "%" : "0%";
+
+        function resetFont() {
+            if (!confirm('هل تريد استعادة الخط الافتراضي؟')) return;
+
+            document.getElementById('loadingScreen').classList.remove('hidden');
+
+            db.collection('settings').doc('global_config').update({
+                customFont: firebase.firestore.FieldValue.delete()
+            }).then(() => {
+                const oldStyle = document.getElementById('custom-font-style');
+                if (oldStyle) oldStyle.remove();
+                document.getElementById('loadingScreen').classList.add('hidden');
+                toggleMenu();
+                alert('🔄 تم استعادة الخط الافتراضي');
+            }).catch(err => {
+                document.getElementById('loadingScreen').classList.add('hidden');
+                alert('❌ خطأ: ' + err.message);
+            });
+        }
+
+        // ═══════════════════════════════════════════════════════
+        //                  نظام الشعارات
+        // ═══════════════════════════════════════════════════════
         
-        try {
-            const snap = await db.collection("exams").get();
-            let pending = 0;
-            snap.forEach(doc => { if(!takenIds.includes(doc.id)) pending++; });
-            document.getElementById('stPending').textContent = pending;
-        } catch(e) {}
-    }
-    // استرجاع الوضع المفضل عند التحميل
-    if(localStorage.getItem('nightMode') === 'true') {
-        document.body.classList.add('night-mode');
-        document.getElementById('themeBtn').textContent = '☀️';
-    }
+        function loadDashboardLogo() {
+            if (!db) return;
 
-    // === دالة فتح سجل الاختبارات ===
-    async function openMyExams() {
-        showScreen('myExamsScreen');
-        const listContainer = document.getElementById('examsHistoryList');
-        listContainer.innerHTML = '<div style="text-align:center">جاري جلب السجل...</div>';
-
-        setTimeout(() => {
-            listContainer.innerHTML = '';
-            let hasExams = false;
-            for (let i = 0; i < localStorage.length; i++) {
-                let key = localStorage.key(i);
-                if (key && key.startsWith('exam_')) {
-                    hasExams = true;
-                    try {
-                        const data = JSON.parse(localStorage.getItem(key));
-                        const examId = key.split('_')[1];
-                        
-                        const item = document.createElement('div');
-                        item.className = 'card'; // سيأخذ ألوان الوضع الليلي تلقائياً
-                        item.style.marginBottom = "15px";
-                        item.style.padding = "15px";
-                        item.innerHTML = `
-                            <div style="display:flex; justify-content:space-between; align-items:center;">
-                                <strong>📝 اختبار: ${data.title || examId}</strong>
-                                <span class="info-value" style="color:var(--primary); font-size:20px;">${data.score}%</span>
-                            </div>
-                            <div style="font-size:12px; color:var(--text-sub); margin:10px 0;">
-                                📅 ${new Date(data.date).toLocaleDateString('ar-EG')} | ✅ ${data.correct} | ❌ ${data.wrong}
-                            </div>
-                            <button class="retake-btn" onclick="retakeExam('${examId}')">🔄 إعادة الاختبار الآن</button>
-                        `;
-                        listContainer.appendChild(item);
-                    } catch(e) {}
-                }
-            }
-            if (!hasExams) listContainer.innerHTML = '<p style="text-align:center; padding:20px;">لم تقم بإجراء أي اختبارات بعد.</p>';
-        }, 300);
-    }
-
-    // === دالة إعادة الاختبار ===
-    // === دالة إعادة الاختبار ===
-    // ═══════════════════
-    
-    
-    // === دالة إعادة الاختبار (تمت إضافتها لأنها كانت ناقصة) ===
-    function retakeExam(examId) {
-        if (confirm("⚠️ هل تريد حقاً مسح نتيجتك القديمة وإعادة هذا الاختبار؟")) {
-            const user = window.Telegram.WebApp.initDataUnsafe?.user;
-            const userId = user ? user.id : 0;
-            const examKey = `exam_${examId}_${userId}`;
-            
-            localStorage.removeItem(examKey); // مسح السجل المحلي
-            
-            // إعادة التوجيه للاختبار
-            const url = new URL(window.location.href);
-            url.searchParams.set('exam_id', examId);
-            window.location.href = url.toString();
-        }
-    }
-
-    //        دوال الصور والشعار (الإصلاح النهائي والشامل)
-    // ═══════════════════════════════════════════════════════
-
-    // 1. دالة تطبيق الشعار (هذه الدالة ضرورية لظهور الصورة عند الفتح)
-    function applyDashboardLogo(base64Image) {
-        const circle = document.getElementById('profileCircle');
-        const placeholder = document.getElementById('uploadPlaceholder');
-        
-        if (circle && placeholder && base64Image) {
-            circle.style.backgroundImage = `url('${base64Image}')`;
-            circle.classList.add('has-image');
-            placeholder.style.display = 'none';
-        }
-    }
-
-    // 2. التعامل مع الضغط على الدائرة (عرض أو تغيير)
-    function handleProfileClick() {
-        const circle = document.getElementById('profileCircle');
-        if (circle.classList.contains('has-image')) {
-            // عرض الصورة مكبرة
-            let style = circle.style.backgroundImage;
-            // تنظيف الرابط من url("...") لاستخراج الرابط الصافي
-            const imgUrl = style.replace(/^url\(['"]?/, '').replace(/['"]?\)$/, ''); 
-            
-            const expandedImg = document.getElementById('expandedImage');
-            if (expandedImg) {
-                expandedImg.src = imgUrl;
-                document.getElementById('imageOverlay').classList.remove('hidden');
-            }
-            
-            // خيار لتغيير الصورة
-            // (اختياري: يمكنك تفعيله إذا أردت السماح بالتغيير بالضغط المطول أو زر آخر)
-             if (confirm("هل تريد تغيير شعار لوحة التحكم؟")) {
-                 document.getElementById('photoInput').click();
-             }
-        } else {
-            // فتح الاستوديو للرفع لأول مرة
-            document.getElementById('photoInput').click();
-        }
-    }
-
-    // 3. إغلاق التكبير
-    function closeOverlay() { 
-        document.getElementById('imageOverlay').classList.add('hidden'); 
-    }
-
-    // 4. مراقبة عملية الرفع + ضغط الصورة + الحفظ في Firebase
-    window.addEventListener('load', function() {
-        
-        // أ) التأكد من تحميل الشعار الموجود بالفعل (لحل مشكلة الاختفاء)
-        if (typeof db !== 'undefined') {
-            db.collection('settings').doc('dashboard_config').onSnapshot((doc) => {
+            db.collection('settings').doc('dashboard_config').onSnapshot(doc => {
                 if (doc.exists && doc.data().adminLogo) {
-                    console.log("📥 تم استلام الشعار من قاعدة البيانات");
                     applyDashboardLogo(doc.data().adminLogo);
                 }
             });
         }
 
-        // ب) إعداد زر الرفع
-        const input = document.getElementById('photoInput');
-        if(input) {
-            input.addEventListener('change', function(e) {
-                const file = e.target.files[0];
-                if (!file) return;
+        function applyDashboardLogo(base64Image) {
+            const circle = document.getElementById('profileCircle');
+            const placeholder = document.getElementById('uploadPlaceholder');
 
-                // إظهار التحميل
-                const loading = document.getElementById('loadingScreen');
-                if(loading) loading.classList.remove('hidden');
-
-                const reader = new FileReader();
-                reader.onload = function(event) {
-                    const img = new Image();
-                    img.src = event.target.result;
-                    img.onload = function() {
-                        // ضغط الصورة (لتسريع التحميل مستقبلاً)
-                        const canvas = document.createElement('canvas');
-                        const ctx = canvas.getContext('2d');
-                        const maxSize = 350; // حجم مناسب جداً للأيقونات
-                        
-                        let width = img.width;
-                        let height = img.height;
-                        if (width > height) {
-                            if (width > maxSize) { height *= maxSize / width; width = maxSize; }
-                        } else {
-                            if (height > maxSize) { width *= maxSize / height; height = maxSize; }
-                        }
-                        
-                        canvas.width = width;
-                        canvas.height = height;
-                        ctx.drawImage(img, 0, 0, width, height);
-                        
-                        const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
-                        
-                        // حفظ في المتغير المحلي (للاختبارات الجديدة)
-                        currentExamLogo = dataUrl;
-
-                        // الحفظ في Firebase (للتثبيت الدائم)
-                        if (typeof db !== 'undefined') {
-                            db.collection('settings').doc('dashboard_config').set({
-                                adminLogo: dataUrl,
-                                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                            }, { merge: true }).then(() => {
-                                if(loading) loading.classList.add('hidden');
-                                alert("✅ تم حفظ الشعار الجديد بنجاح!");
-                                applyDashboardLogo(dataUrl); 
-                            }).catch(err => {
-                                console.error(err);
-                                if(loading) loading.classList.add('hidden');
-                                alert("⚠️ تم تغيير الصورة محلياً (فشل الحفظ في السيرفر).");
-                                applyDashboardLogo(dataUrl);
-                            });
-                        }
-                    }
-                }
-                reader.readAsDataURL(file);
-            });
+            if (circle && placeholder && base64Image) {
+                circle.style.backgroundImage = `url('${base64Image}')`;
+                circle.classList.add('has-image');
+                placeholder.style.display = 'none';
+            }
         }
-    });
-</script>
-<div id="imageOverlay" class="image-overlay hidden" onclick="closeOverlay()">
-    <img id="expandedImage" src="" alt="تكبير">
-</div>
+
+        function handleProfileClick() {
+            const circle = document.getElementById('profileCircle');
+            
+            if (circle.classList.contains('has-image')) {
+                if (confirm('هل تريد تغيير الشعار؟')) {
+                    document.getElementById('photoInput').click();
+                }
+            } else {
+                document.getElementById('photoInput').click();
+            }
+        }
+
+        function closeOverlay() {
+            document.getElementById('imageOverlay').classList.add('hidden');
+        }
+
+        // مستمع رفع الصور
+        document.addEventListener('DOMContentLoaded', function() {
+            const input = document.getElementById('photoInput');
+            if (input) {
+                input.addEventListener('change', function(e) {
+                    const file = e.target.files[0];
+                    if (!file) return;
+
+                    document.getElementById('loadingScreen').classList.remove('hidden');
+
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        const img = new Image();
+                        img.src = event.target.result;
+                        img.onload = function() {
+                            const canvas = document.createElement('canvas');
+                            const ctx = canvas.getContext('2d');
+                            const maxSize = 300;
+
+                            let width = img.width;
+                            let height = img.height;
+
+                            if (width > height) {
+                                if (width > maxSize) { height *= maxSize / width; width = maxSize; }
+                            } else {
+                                if (height > maxSize) { width *= maxSize / height; height = maxSize; }
+                            }
+
+                            canvas.width = width;
+                            canvas.height = height;
+                            ctx.drawImage(img, 0, 0, width, height);
+
+                            const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                            currentExamLogo = dataUrl;
+
+                            if (db) {
+                                db.collection('settings').doc('dashboard_config').set({
+                                    adminLogo: dataUrl,
+                                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                                }, { merge: true }).then(() => {
+                                    document.getElementById('loadingScreen').classList.add('hidden');
+                                    applyDashboardLogo(dataUrl);
+                                    showToast('✅ تم حفظ الشعار', true);
+                                }).catch(err => {
+                                    document.getElementById('loadingScreen').classList.add('hidden');
+                                    applyDashboardLogo(dataUrl);
+                                });
+                            }
+                        };
+                    };
+                    reader.readAsDataURL(file);
+                });
+            }
+        });
+
+        // CSS للحركات
+        const fadeOutStyle = document.createElement('style');
+        fadeOutStyle.textContent = `
+            @keyframes fadeOut {
+                from { opacity: 1; transform: translateX(0); }
+                to { opacity: 0; transform: translateX(-20px); }
+            }
+        `;
+        document.head.appendChild(fadeOutStyle);
+
+        // إغلاق القائمة عند النقر خارجها
+        document.addEventListener('click', function(e) {
+            const menu = document.getElementById('dropdownMenu');
+            const menuBtn = document.getElementById('menuBtn');
+            
+            if (menu && !menu.contains(e.target) && !menuBtn?.contains(e.target)) {
+                menu.classList.remove('show');
+            }
+        });
+    </script>
 
 </body>
-</html>
+</html>    
