@@ -40,6 +40,7 @@
             --success: #27ae60;
             --danger: #e74c3c;
             --warning: #f39c12;
+            --info: #3498db;
             --bg: #ffffff;
             --card-bg: #ffffff;
             --element-bg: #f8f9fa;
@@ -298,13 +299,13 @@
         }
 
         .action-card-big:hover::before { left: 100%; }
-
         .action-card-big:active { transform: scale(0.96); }
 
         .action-card-big.stats { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
         .action-card-big.exams { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
         .action-card-big.manage { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
         .action-card-big.create { background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); color: #333; }
+        .action-card-big.logs { background: linear-gradient(135deg, #5f2c82 0%, #49a09d 100%); }
 
         body.night-mode .action-card-big {
             background: linear-gradient(135deg, var(--primary), #000) !important;
@@ -315,7 +316,7 @@
         body.night-mode .action-card-big.create { color: white; }
 
         /* ═══════════════════════════════════════════════════════
-                      نظام الأقسام المتفرعة (Tree View)
+                      نظام الأقسام المتفرعة (Tree View) - محسّن
            ═══════════════════════════════════════════════════════ */
         .category-selector {
             background: var(--element-bg);
@@ -330,22 +331,33 @@
             justify-content: space-between;
             align-items: center;
             cursor: pointer;
-            padding: 10px;
+            padding: 12px 15px;
             background: var(--input-bg);
             border-radius: 10px;
             transition: 0.3s;
+            border: 2px solid transparent;
         }
 
-        .category-selector-header:hover { background: var(--border); }
+        .category-selector-header:hover { 
+            background: var(--border); 
+            border-color: var(--primary);
+        }
+
+        .category-selector-header.has-selection {
+            border-color: var(--success);
+            background: rgba(39, 174, 96, 0.1);
+        }
 
         .selected-category-text {
             font-size: 15px;
             color: var(--text-main);
+            font-weight: 500;
         }
 
         .category-selector-header .arrow {
             transition: transform 0.3s;
             font-size: 12px;
+            color: var(--text-sub);
         }
 
         .category-selector-header.open .arrow { transform: rotate(180deg); }
@@ -357,66 +369,125 @@
         }
 
         .category-tree.open {
-            max-height: 400px;
+            max-height: 500px;
             overflow-y: auto;
-            margin-top: 10px;
-            padding: 5px;
+            margin-top: 15px;
+            padding: 10px;
+            background: var(--card-bg);
+            border-radius: 10px;
+            border: 1px solid var(--border);
+        }
+
+        .tree-node {
+            margin-bottom: 5px;
         }
 
         .tree-item {
             padding: 12px 15px;
-            margin: 3px 0;
             border-radius: 10px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            background: var(--card-bg);
-            border: 1px solid transparent;
-            transition: all 0.2s;
+            background: var(--element-bg);
+            border: 2px solid transparent;
+            transition: all 0.25s ease;
+            margin-bottom: 4px;
         }
 
         .tree-item:hover {
-            background: var(--element-bg);
+            background: linear-gradient(135deg, rgba(255,81,47,0.05), rgba(221,36,118,0.05));
             border-color: var(--primary);
+            transform: translateX(-3px);
         }
 
         .tree-item.selected {
-            background: linear-gradient(135deg, rgba(255,81,47,0.1), rgba(221,36,118,0.1));
+            background: linear-gradient(135deg, rgba(255,81,47,0.15), rgba(221,36,118,0.15));
             border-color: var(--primary);
+            box-shadow: 0 4px 15px rgba(255, 81, 47, 0.2);
         }
 
-        .tree-item.parent { font-weight: bold; }
+        .tree-item.selected .tree-item-name {
+            font-weight: bold;
+            color: var(--primary);
+        }
 
-        .tree-item .icon { margin-left: 10px; font-size: 18px; }
+        .tree-item-content {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+        }
 
-        .tree-item .expand-icon {
+        .tree-item-icon {
+            font-size: 18px;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--card-bg);
+            border-radius: 8px;
+        }
+
+        .tree-item-name {
             font-size: 14px;
-            transition: transform 0.3s;
-            color: var(--text-sub);
+            color: var(--text-main);
         }
 
-        .tree-item.expanded .expand-icon { transform: rotate(90deg); }
+        .tree-expand-btn {
+            width: 30px;
+            height: 30px;
+            border-radius: 8px;
+            border: none;
+            background: var(--card-bg);
+            color: var(--text-sub);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            transition: all 0.3s;
+        }
+
+        .tree-expand-btn:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        .tree-expand-btn.expanded {
+            transform: rotate(90deg);
+        }
 
         .tree-children {
-            padding-right: 25px;
+            margin-right: 20px;
+            padding-right: 15px;
+            border-right: 2px dashed var(--border);
             max-height: 0;
             overflow: hidden;
             transition: max-height 0.3s ease;
         }
 
-        .tree-children.open { max-height: 500px; }
-
-        .tree-item.child {
-            font-size: 14px;
-            padding: 10px 12px;
-            background: var(--input-bg);
+        .tree-children.open {
+            max-height: 2000px;
+            margin-top: 5px;
         }
 
-        .tree-item.grandchild {
-            font-size: 13px;
-            padding: 8px 10px;
-            margin-right: 15px;
+        .tree-item.level-0 .tree-item-icon { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+        .tree-item.level-1 .tree-item-icon { background: linear-gradient(135deg, #f093fb, #f5576c); color: white; }
+        .tree-item.level-2 .tree-item-icon { background: linear-gradient(135deg, #4facfe, #00f2fe); color: white; }
+        .tree-item.level-3 .tree-item-icon { background: linear-gradient(135deg, #43e97b, #38f9d7); color: white; }
+
+        .no-categories-msg {
+            text-align: center;
+            padding: 30px;
+            color: var(--text-sub);
+        }
+
+        .no-categories-msg .icon {
+            font-size: 40px;
+            margin-bottom: 10px;
+            opacity: 0.5;
         }
 
         /* ═══════════════════════════════════════════════════════
@@ -452,6 +523,7 @@
 
         .exam-manage-meta {
             display: flex;
+            flex-wrap: wrap;
             gap: 15px;
             font-size: 13px;
             color: var(--text-sub);
@@ -1094,6 +1166,136 @@
         }
 
         /* ═══════════════════════════════════════════════════════
+                       سجل الإجراءات (Audit Log) - جديد
+           ═══════════════════════════════════════════════════════ */
+        .log-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 18px;
+            margin-bottom: 12px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s;
+            animation: fadeUp 0.4s ease;
+        }
+
+        .log-card::before {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+        }
+
+        .log-card:hover {
+            transform: translateX(-5px);
+            box-shadow: var(--shadow);
+        }
+
+        .log-card.action-add::before { background: var(--success); }
+        .log-card.action-delete::before { background: var(--danger); }
+        .log-card.action-edit::before { background: var(--info); }
+        .log-card.action-exam::before { background: linear-gradient(135deg, #f093fb, #f5576c); }
+
+        .log-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 10px;
+        }
+
+        .log-action-type {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            background: var(--element-bg);
+            color: var(--text-main);
+        }
+
+        .log-time {
+            font-size: 11px;
+            color: var(--text-sub);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .log-content {
+            font-size: 14px;
+            color: var(--text-main);
+            line-height: 1.7;
+            padding: 10px;
+            background: var(--element-bg);
+            border-radius: 10px;
+        }
+
+        .log-user {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 12px;
+            padding-top: 10px;
+            border-top: 1px dashed var(--border);
+            font-size: 12px;
+            color: var(--text-sub);
+        }
+
+        .log-user-avatar {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .logs-filter {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            border-radius: 20px;
+            border: 2px solid var(--border);
+            background: var(--card-bg);
+            color: var(--text-main);
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .filter-btn:hover, .filter-btn.active {
+            border-color: var(--primary);
+            background: linear-gradient(135deg, rgba(255,81,47,0.1), rgba(221,36,118,0.1));
+            color: var(--primary);
+        }
+
+        .logs-empty {
+            text-align: center;
+            padding: 50px 20px;
+        }
+
+        .logs-empty .icon {
+            font-size: 60px;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+
+        /* ═══════════════════════════════════════════════════════
                           تحسينات عامة إضافية
            ═══════════════════════════════════════════════════════ */
         h1, h2, h3 { color: var(--text-main); }
@@ -1124,6 +1326,12 @@
             max-height: 90%;
             border-radius: 15px;
             box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        }
+
+        /* Animation for fadeOut */
+        @keyframes fadeOut {
+            from { opacity: 1; transform: translateX(0); }
+            to { opacity: 0; transform: translateX(-20px); }
         }
     </style>
 </head>
@@ -1355,6 +1563,27 @@
         </div>
 
         <!-- ═══════════════════════════════════════════════════════
+                        شاشة سجل الإجراءات (Audit Log) - جديد
+             ═══════════════════════════════════════════════════════ -->
+        <div class="card hidden" id="auditLogScreen">
+            <div style="font-size: 60px; margin-bottom: 15px;">📜</div>
+            <h1>سجل الإجراءات</h1>
+            <p class="subtitle">جميع إجراءات البوت والإدارة</p>
+
+            <!-- فلاتر -->
+            <div class="logs-filter">
+                <button class="filter-btn active" data-filter="all" onclick="filterLogs('all')">🔄 الكل</button>
+                <button class="filter-btn" data-filter="add" onclick="filterLogs('add')">➕ إضافة</button>
+                <button class="filter-btn" data-filter="delete" onclick="filterLogs('delete')">🗑️ حذف</button>
+                <button class="filter-btn" data-filter="exam" onclick="filterLogs('exam')">📝 اختبارات</button>
+            </div>
+
+            <div id="auditLogsList" style="max-height: 450px; overflow-y: auto; margin: 20px 0;"></div>
+
+            <button class="btn btn-outline btn-block" onclick="showScreen('adminPanel')">🔙 العودة للوحة التحكم</button>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════
                              لوحة التحكم
              ═══════════════════════════════════════════════════════ -->
         <div class="card hidden" id="adminPanel">
@@ -1386,6 +1615,13 @@
                 <div style="font-size: 12px; opacity: 0.8; margin-top: 5px;">عرض وحذف الاختبارات</div>
             </div>
 
+            <!-- زر سجل الإجراءات - جديد -->
+            <div class="action-card-big logs" onclick="openAuditLog()">
+                <div style="font-size: 35px; margin-bottom: 8px;">📜</div>
+                <div style="font-weight: bold; font-size: 16px;">سجل الإجراءات</div>
+                <div style="font-size: 12px; opacity: 0.8; margin-top: 5px;">متابعة جميع العمليات</div>
+            </div>
+
             <!-- فورم إنشاء اختبار -->
             <div id="createExamForm" class="hidden" style="margin-top: 25px;">
                 <div class="section-title">📝 تفاصيل الاختبار</div>
@@ -1393,15 +1629,16 @@
                 <label>📂 اختر القسم:</label>
                 
                 <!-- ═══════════════════════════════════════════════════════
-                              نظام الأقسام المتفرعة (Tree View)
+                              نظام الأقسام المتفرعة (Tree View) - محسّن
                      ═══════════════════════════════════════════════════════ -->
                 <div class="category-selector" id="categorySelector">
-                    <div class="category-selector-header" onclick="toggleCategoryTree()">
+                    <div class="category-selector-header" id="categorySelectorHeader" onclick="toggleCategoryTree()">
                         <span class="selected-category-text" id="selectedCategoryText">🔻 اختر القسم</span>
                         <span class="arrow">▼</span>
                     </div>
                     <div class="category-tree" id="categoryTree"></div>
                 </div>
+                <!-- حقل مخفي لتخزين ID القسم المختار بشكل صارم -->
                 <input type="hidden" id="selectedCategoryId" value="">
 
                 <label>عنوان الاختبار:</label>
@@ -1448,6 +1685,7 @@
     <div id="imageOverlay" class="image-overlay hidden" onclick="closeOverlay()">
         <img id="expandedImage" src="" alt="تكبير">
     </div>
+ 
     <!-- ═══════════════════════════════════════════════════════
                          JavaScript الكامل
          ═══════════════════════════════════════════════════════ -->
@@ -1501,8 +1739,14 @@
         let finalResultToBot = null;
         let currentExamLogo = null;
         let qCounter = 0;
-        let categoriesData = [];
-        let selectedCategoryId = '';
+        
+        // ═══════════════════════════════════════════════════════
+        //        متغيرات نظام الأقسام المتفرعة - محسّنة
+        // ═══════════════════════════════════════════════════════
+        let categoriesFlat = [];      // المصفوفة المسطحة الأصلية
+        let categoriesTree = [];      // الشجرة المتداخلة بعد التحويل
+        let selectedCategoryId = '';  // ID القسم المختار (متغير عام صارم)
+        let selectedCategoryName = ''; // اسم القسم المختار
 
         // تهيئة تيليجرام
         try {
@@ -1547,7 +1791,7 @@
 
             const urlParams = new URLSearchParams(window.location.search);
 
-            // التحقق من وضع إنشاء الاختبار
+            // التحقق من وضع إنشاء الاختبار (Admin Mode)
             if (urlParams.has('cats')) {
                 console.log("🛠️ Admin mode detected");
                 await loadAndSyncCategories();
@@ -1562,15 +1806,19 @@
         }
 
         // ═══════════════════════════════════════════════════════
-        //              نظام الأقسام المتفرعة (Tree View)
+        //     نظام الأقسام المتفرعة (Tree View) - إصلاح كامل
         // ═══════════════════════════════════════════════════════
         
+        /**
+         * تحميل ومزامنة الأقسام من الرابط
+         */
         async function loadAndSyncCategories() {
             const urlParams = new URLSearchParams(window.location.search);
             const catsData = urlParams.get('cats');
 
             if (catsData) {
                 try {
+                    // فك الضغط والتشفير
                     const base64 = catsData.replace(/-/g, '+').replace(/_/g, '/');
                     const binaryString = window.atob(base64);
                     const bytes = new Uint8Array(binaryString.length);
@@ -1578,19 +1826,25 @@
                         bytes[i] = binaryString.charCodeAt(i);
                     }
                     const decompressed = pako.inflate(bytes, { to: 'string' });
-                    categoriesData = JSON.parse(decompressed);
+                    categoriesFlat = JSON.parse(decompressed);
+
+                    console.log("📥 Raw categories received:", categoriesFlat);
 
                     // حفظ في Firebase
                     if (db) {
                         await db.collection('settings').doc('app_categories').set({
-                            data: categoriesData,
+                            data: categoriesFlat,
                             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                         });
                         console.log("✅ Categories saved to cloud");
                     }
 
-                    // بناء شجرة الأقسام
-                    buildCategoryTree(categoriesData);
+                    // تحويل المصفوفة المسطحة إلى شجرة متداخلة
+                    categoriesTree = buildNestedTree(categoriesFlat);
+                    console.log("🌳 Nested tree built:", categoriesTree);
+
+                    // بناء واجهة الشجرة
+                    renderCategoryTree(categoriesTree);
                     
                     // إظهار لوحة التحكم
                     document.getElementById('loadingScreen').classList.add('hidden');
@@ -1599,18 +1853,24 @@
                 } catch (e) {
                     console.error("Error parsing categories:", e);
                     alert("خطأ في معالجة البيانات: " + e.message);
+                    document.getElementById('loadingScreen').classList.add('hidden');
+                    showNoExamScreen();
                 }
             }
         }
 
+        /**
+         * جلب الأقسام من Firebase
+         */
         async function fetchCategoriesFromCloud() {
             if (!db) return;
 
             try {
                 const doc = await db.collection('settings').doc('app_categories').get();
                 if (doc.exists && doc.data().data) {
-                    categoriesData = doc.data().data;
-                    buildCategoryTree(categoriesData);
+                    categoriesFlat = doc.data().data;
+                    categoriesTree = buildNestedTree(categoriesFlat);
+                    renderCategoryTree(categoriesTree);
                     console.log("📥 Categories loaded from cloud");
                 }
             } catch (e) {
@@ -1618,119 +1878,210 @@
             }
         }
 
-        function buildCategoryTree(categories) {
+        /**
+         * ═══════════════════════════════════════════════════════
+         *   الخوارزمية الأساسية: تحويل المصفوفة المسطحة إلى شجرة
+         *   Recursive Function - دعم لا نهائي للمستويات
+         * ═══════════════════════════════════════════════════════
+         */
+        function buildNestedTree(flatArray) {
+            // إنشاء خريطة للوصول السريع بواسطة ID
+            const itemMap = {};
+            const rootItems = [];
+
+            // الخطوة 1: إنشاء نسخة من كل عنصر مع مصفوفة أبناء فارغة
+            flatArray.forEach(item => {
+                // التعامل مع مختلف أشكال البيانات
+                const id = item.i || item.id || item.ID;
+                const parentId = item.p || item.parent_id || item.parentId || null;
+                const name = item.n || item.name || item.title || 'بدون اسم';
+
+                itemMap[id] = {
+                    id: id,
+                    name: name,
+                    parentId: parentId,
+                    children: [],
+                    // نسخ أي بيانات إضافية
+                    ...item
+                };
+            });
+
+            // الخطوة 2: ربط الأبناء بآبائهم
+            Object.values(itemMap).forEach(item => {
+                if (item.parentId && itemMap[item.parentId]) {
+                    // إذا كان له أب موجود، أضفه لأبنائه
+                    itemMap[item.parentId].children.push(item);
+                } else {
+                    // إذا لم يكن له أب أو الأب غير موجود، فهو عنصر جذري
+                    rootItems.push(item);
+                }
+            });
+
+            // الخطوة 3: ترتيب الأبناء (اختياري)
+            const sortChildren = (items) => {
+                items.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ar'));
+                items.forEach(item => {
+                    if (item.children && item.children.length > 0) {
+                        sortChildren(item.children);
+                    }
+                });
+            };
+            sortChildren(rootItems);
+
+            return rootItems;
+        }
+
+        /**
+         * بناء واجهة HTML للشجرة بشكل متكرر (Recursive)
+         */
+        function renderCategoryTree(treeData) {
             const treeContainer = document.getElementById('categoryTree');
             if (!treeContainer) return;
 
             treeContainer.innerHTML = '';
-            
-            categories.forEach((cat, index) => {
-                const itemHtml = createTreeItem(cat, 0, `cat_${index}`);
-                treeContainer.insertAdjacentHTML('beforeend', itemHtml);
-            });
+
+            if (!treeData || treeData.length === 0) {
+                treeContainer.innerHTML = `
+                    <div class="no-categories-msg">
+                        <div class="icon">📭</div>
+                        <p>لا توجد أقسام متاحة</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // بناء HTML للشجرة
+            const treeHTML = buildTreeHTML(treeData, 0);
+            treeContainer.innerHTML = treeHTML;
 
             // إضافة مستمعي الأحداث
-            attachTreeListeners();
+            attachTreeEventListeners();
         }
 
-        function createTreeItem(item, level, parentId) {
-            const hasChildren = item.s && item.s.length > 0;
-            const levelClass = level === 0 ? 'parent' : (level === 1 ? 'child' : 'grandchild');
-            const icon = level === 0 ? '📂' : (level === 1 ? '📁' : '📄');
-            const paddingRight = level * 20;
+        /**
+         * بناء HTML بشكل متكرر لكل مستوى
+         */
+        function buildTreeHTML(items, level) {
+            let html = '';
 
-            let html = `
-                <div class="tree-item ${levelClass} ${hasChildren ? 'has-children' : ''}" 
-                     data-id="${item.i || ''}" 
-                     data-name="${item.n || ''}"
-                     style="padding-right: ${15 + paddingRight}px; padding-left: 5px;">
-                    
-                    <div class="tree-select-area" style="display: flex; align-items: center; gap: 8px; flex: 1; padding: 5px 0;">
-                        <span class="icon">${icon}</span>
-                        <span>${item.n || 'بدون اسم'}</span>
+            items.forEach(item => {
+                const hasChildren = item.children && item.children.length > 0;
+                const levelIcons = ['📂', '📁', '📄', '📋', '📑'];
+                const icon = levelIcons[Math.min(level, levelIcons.length - 1)];
+
+                html += `
+                    <div class="tree-node" data-id="${item.id}">
+                        <div class="tree-item level-${level}" 
+                             data-id="${item.id}" 
+                             data-name="${item.name}"
+                             data-has-children="${hasChildren}">
+                            <div class="tree-item-content" onclick="selectCategory('${item.id}', '${item.name.replace(/'/g, "\\'")}')">
+                                <div class="tree-item-icon">${icon}</div>
+                                <span class="tree-item-name">${item.name}</span>
+                            </div>
+                            ${hasChildren ? `
+                                <button class="tree-expand-btn" onclick="toggleTreeNode(this, event)">
+                                    ◀
+                                </button>
+                            ` : ''}
+                        </div>
+                        ${hasChildren ? `
+                            <div class="tree-children" data-parent-id="${item.id}">
+                                ${buildTreeHTML(item.children, level + 1)}
+                            </div>
+                        ` : ''}
                     </div>
-
-                    ${hasChildren ? '<div class="expand-area" style="padding: 5px 15px; cursor: pointer;"><span class="expand-icon" style="display:inline-block; transition: transform 0.3s;">◀</span></div>' : ''}
-                </div>
-            `;
-
-            if (hasChildren) {
-                html += `<div class="tree-children" data-parent="${parentId}">`;
-                item.s.forEach((child, idx) => {
-                    html += createTreeItem(child, level + 1, `${parentId}_${idx}`);
-                });
-                html += `</div>`;
-            }
+                `;
+            });
 
             return html;
         }
 
-        function attachTreeListeners() {
-            // 1. تفعيل زر الاختيار (الضغط على الاسم)
-            const selectAreas = document.querySelectorAll('.tree-select-area');
-            selectAreas.forEach(area => {
-                area.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    
-                    const treeItem = this.closest('.tree-item');
-                    
-                    // إزالة التحديد من الكل وإضافته للقسم الحالي
-                    document.querySelectorAll('.tree-item').forEach(i => i.classList.remove('selected'));
-                    treeItem.classList.add('selected');
-                    
-                    // حفظ القسم المختار
-                    selectedCategoryId = treeItem.dataset.id;
-                    document.getElementById('selectedCategoryId').value = selectedCategoryId;
-                    document.getElementById('selectedCategoryText').textContent = '✅ ' + treeItem.dataset.name;
-                    
-                    // إغلاق القائمة
-                    setTimeout(() => {
-                        document.getElementById('categoryTree').classList.remove('open');
-                        document.querySelector('.category-selector-header').classList.remove('open');
-                    }, 300);
-                });
-            });
-
-            // 2. تفعيل زر السهم (الضغط لفتح الأقسام المتفرعة)
-            const expandAreas = document.querySelectorAll('.expand-area');
-            expandAreas.forEach(area => {
-                area.addEventListener('click', function(e) {
-                    e.stopPropagation(); // يمنع اختيار القسم عند فتح السهم
-                    
-                    const parentItem = this.closest('.tree-item');
-                    const icon = this.querySelector('.expand-icon');
-                    const childrenContainer = parentItem.nextElementSibling;
-                    
-                    parentItem.classList.toggle('expanded');
-                    
-                    // تحريك السهم للأسفل
-                    if (parentItem.classList.contains('expanded')) {
-                        icon.style.transform = 'rotate(-90deg)';
-                    } else {
-                        icon.style.transform = 'rotate(0deg)';
-                    }
-                    
-                    // فتح وإغلاق الحاوية التي تحتويه بمرونة
-                    if (childrenContainer && childrenContainer.classList.contains('tree-children')) {
-                        childrenContainer.classList.toggle('open');
-                        
-                        // التغلب على قيود الطول للمستويات العميقة جداً
-                        if (childrenContainer.classList.contains('open')) {
-                            childrenContainer.style.maxHeight = '5000px'; 
-                        } else {
-                            childrenContainer.style.maxHeight = '0px';
-                        }
-                    }
-                });
-            });
+        /**
+         * فتح/إغلاق فرع في الشجرة
+         */
+        function toggleTreeNode(btn, event) {
+            event.stopPropagation();
+            
+            const treeNode = btn.closest('.tree-node');
+            const childrenContainer = treeNode.querySelector(':scope > .tree-children');
+            
+            if (childrenContainer) {
+                btn.classList.toggle('expanded');
+                childrenContainer.classList.toggle('open');
+            }
         }
 
+        /**
+         * اختيار قسم من الشجرة - إصلاح حفظ الـ ID
+         */
+        function selectCategory(id, name) {
+            // إزالة التحديد من جميع العناصر
+            document.querySelectorAll('.tree-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+
+            // تحديد العنصر الحالي
+            const selectedItem = document.querySelector(`.tree-item[data-id="${id}"]`);
+            if (selectedItem) {
+                selectedItem.classList.add('selected');
+            }
+
+            // ═══════════════════════════════════════════════════════
+            //    حفظ ID القسم المختار بشكل صارم في المتغير العام
+            //    والحقل المخفي للتأكد من إرساله للبوت
+            // ═══════════════════════════════════════════════════════
+            selectedCategoryId = id;
+            selectedCategoryName = name;
+            
+            // تحديث الحقل المخفي
+            const hiddenInput = document.getElementById('selectedCategoryId');
+            if (hiddenInput) {
+                hiddenInput.value = id;
+            }
+
+            // تحديث النص المعروض
+            const textDisplay = document.getElementById('selectedCategoryText');
+            if (textDisplay) {
+                textDisplay.textContent = '✅ ' + name;
+            }
+
+            // إضافة class للهيدر لإظهار أن هناك اختيار
+            const header = document.getElementById('categorySelectorHeader');
+            if (header) {
+                header.classList.add('has-selection');
+            }
+
+            console.log("✅ Category selected:", { id: selectedCategoryId, name: selectedCategoryName });
+
+            // إغلاق القائمة بعد الاختيار
+            setTimeout(() => {
+                const tree = document.getElementById('categoryTree');
+                const selectorHeader = document.querySelector('.category-selector-header');
+                if (tree) tree.classList.remove('open');
+                if (selectorHeader) selectorHeader.classList.remove('open');
+            }, 300);
+        }
+
+        /**
+         * فتح/إغلاق قائمة الأقسام
+         */
         function toggleCategoryTree() {
             const tree = document.getElementById('categoryTree');
             const header = document.querySelector('.category-selector-header');
             
-            tree.classList.toggle('open');
-            header.classList.toggle('open');
+            if (tree && header) {
+                tree.classList.toggle('open');
+                header.classList.toggle('open');
+            }
+        }
+
+        /**
+         * إضافة مستمعي الأحداث للشجرة
+         */
+        function attachTreeEventListeners() {
+            // لا حاجة لمستمعين إضافيين لأن onclick مضمن في HTML
+            console.log("🌳 Tree event listeners attached");
         }
 
         // ═══════════════════════════════════════════════════════
@@ -1858,17 +2209,15 @@
         // ═══════════════════════════════════════════════════════
         
         function showScreen(screenId) {
-            // إخفاء جميع الشاشات
             const allScreens = ['loadingScreen', 'noExamScreen', 'statsScreen', 'myExamsScreen', 
                                'alreadyTakenScreen', 'startScreen', 'examScreen', 'resultScreen',
-                               'adminPanel', 'manageExamsScreen'];
+                               'adminPanel', 'manageExamsScreen', 'auditLogScreen'];
             
             allScreens.forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.classList.add('hidden');
             });
 
-            // إظهار الشاشة المطلوبة
             const target = document.getElementById(screenId);
             if (target) target.classList.remove('hidden');
 
@@ -2026,7 +2375,6 @@
                 isCorrect: isCorrect
             });
 
-            // إظهار النتيجة
             const options = document.querySelectorAll('.option');
             options.forEach((opt, i) => {
                 opt.classList.add('locked');
@@ -2039,7 +2387,6 @@
 
             document.getElementById('submitBtn').disabled = true;
 
-            // عرض التعليل إذا كانت الإجابة خاطئة
             if (!isCorrect && question.explanations && question.explanations[selectedOption]) {
                 setTimeout(() => {
                     document.getElementById('explanationText').textContent = question.explanations[selectedOption];
@@ -2087,14 +2434,12 @@
             const wrongCount = totalQuestions - correctCount;
             const scorePercent = Math.round((correctCount / totalQuestions) * 100);
 
-            // تحديد الأيقونة
             let icon, title;
             if (scorePercent >= 90) { icon = '🏆'; title = 'ممتاز!'; }
             else if (scorePercent >= 75) { icon = '🌟'; title = 'جيد جداً!'; }
             else if (scorePercent >= 50) { icon = '✅'; title = 'ناجح'; }
             else { icon = '📚'; title = 'حاول مرة أخرى'; }
 
-            // تحديث الشاشة
             document.getElementById('resultIcon').textContent = icon;
             document.getElementById('resultTitle').textContent = title;
             document.getElementById('resultScore').textContent = scorePercent + '%';
@@ -2107,7 +2452,6 @@
             document.getElementById('statTime').textContent = 
                 `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
 
-            // إرسال للقناة
             sendResultToChannel({
                 exam_id: examData.id,
                 exam_title: examData.title,
@@ -2120,7 +2464,6 @@
                 timeout: timeout
             });
 
-            // حفظ النتيجة
             finalResultToBot = {
                 exam_id: examData.id,
                 user_id: examData.user_id,
@@ -2131,7 +2474,6 @@
                 time_taken: timeTakenSeconds
             };
 
-            // حفظ محلي
             const user = window.Telegram?.WebApp?.initDataUnsafe?.user;
             const userId = user ? user.id : 0;
             const examKey = `exam_${examData.id}_${userId}`;
@@ -2263,7 +2605,6 @@ ${result.timeout ? '⚠️ انتهى الوقت!' : ''}
             try {
                 await db.collection('exams').doc(examId).delete();
                 
-                // حذف البطاقة من الواجهة
                 const card = document.getElementById(`exam-card-${examId}`);
                 if (card) {
                     card.style.animation = 'fadeOut 0.3s ease';
@@ -2272,7 +2613,6 @@ ${result.timeout ? '⚠️ انتهى الوقت!' : ''}
 
                 showToast('✅ تم حذف الاختبار بنجاح', true);
 
-                // التحقق إذا لم يبقَ أي اختبارات
                 setTimeout(() => {
                     const remaining = document.querySelectorAll('.exam-manage-card');
                     if (remaining.length === 0) {
@@ -2292,7 +2632,7 @@ ${result.timeout ? '⚠️ انتهى الوقت!' : ''}
         }
 
         // ═══════════════════════════════════════════════════════
-        //                  إنشاء الاختبارات
+        //          إنشاء الاختبارات - مع إصلاح target_sub_id
         // ═══════════════════════════════════════════════════════
         
         function toggleCreateForm() {
@@ -2307,7 +2647,6 @@ ${result.timeout ? '⚠️ انتهى الوقت!' : ''}
                 fabBtn.classList.remove('hidden');
                 saveBtn.classList.remove('hidden');
                 
-                // إضافة سؤالين افتراضيين
                 if (document.querySelectorAll('.edit-card').length === 0) {
                     addQuestionCard();
                     addQuestionCard();
@@ -2357,11 +2696,9 @@ ${result.timeout ? '⚠️ انتهى الوقت!' : ''}
 
             container.appendChild(card);
 
-            // إضافة خيارين افتراضيين
             addOption(qCounter);
             addOption(qCounter);
 
-            // تمرير للبطاقة
             setTimeout(() => {
                 card.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }, 100);
@@ -2449,17 +2786,43 @@ ${result.timeout ? '⚠️ انتهى الوقت!' : ''}
             });
         }
 
+        /**
+         * ═══════════════════════════════════════════════════════
+         *     حفظ الاختبار - إصلاح مشكلة target_sub_id
+         * ═══════════════════════════════════════════════════════
+         */
         async function saveExamToCloud() {
             const title = document.getElementById('examTitleInput').value.trim();
-            const subId = document.getElementById('selectedCategoryId').value;
+            
+            // ═══════════════════════════════════════════════════════
+            //    قراءة target_sub_id بشكل صارم من المتغير العام
+            //    والحقل المخفي كاحتياط
+            // ═══════════════════════════════════════════════════════
+            let targetSubId = selectedCategoryId;
+            
+            // احتياطي: قراءة من الحقل المخفي إذا كان المتغير فارغاً
+            if (!targetSubId) {
+                const hiddenInput = document.getElementById('selectedCategoryId');
+                targetSubId = hiddenInput ? hiddenInput.value.trim() : '';
+            }
 
+            // التحقق الصارم من العنوان
             if (!title) {
                 alert('⚠️ يرجى كتابة عنوان الاختبار!');
+                document.getElementById('examTitleInput').focus();
                 return;
             }
 
-            if (!subId) {
-                alert('⚠️ يرجى اختيار القسم!');
+            // التحقق الصارم من اختيار القسم
+            if (!targetSubId) {
+                alert('⚠️ يرجى اختيار القسم من الشجرة!\n\nاضغط على "اختر القسم" ثم اختر القسم المناسب.');
+                // فتح قائمة الأقسام تلقائياً
+                const tree = document.getElementById('categoryTree');
+                const header = document.querySelector('.category-selector-header');
+                if (tree && !tree.classList.contains('open')) {
+                    tree.classList.add('open');
+                    if (header) header.classList.add('open');
+                }
                 return;
             }
 
@@ -2523,23 +2886,33 @@ ${result.timeout ? '⚠️ انتهى الوقت!' : ''}
                     duration: durationVal,
                     questions: questions,
                     logo: currentExamLogo || null,
+                    category_id: targetSubId, // حفظ ID القسم
                     created_at: firebase.firestore.FieldValue.serverTimestamp()
                 });
 
-                // إرسال للبوت
+                console.log("✅ Exam saved with ID:", docRef.id);
+                console.log("📤 Sending to bot - target_sub_id:", targetSubId);
+
+                // ═══════════════════════════════════════════════════════
+                //    إرسال البيانات للبوت مع target_sub_id الصحيح
+                // ═══════════════════════════════════════════════════════
                 const dataToSend = JSON.stringify({
                     type: "cloud_exam",
                     exam_id: docRef.id,
                     title: title,
-                    target_sub_id: subId
+                    target_sub_id: targetSubId  // ID القسم المختار
                 });
 
+                console.log("📦 Data to send:", dataToSend);
+
                 if (window.Telegram?.WebApp) {
-                    alert("✅ تم حفظ الاختبار ونشره بنجاح!");
+                    document.getElementById('loadingScreen').classList.add('hidden');
+                    alert("✅ تم حفظ الاختبار ونشره بنجاح!\n\nالقسم: " + selectedCategoryName);
                     window.Telegram.WebApp.sendData(dataToSend);
                 } else {
                     document.getElementById('loadingScreen').classList.add('hidden');
-                    alert('✅ تم الحفظ! معرف الاختبار: ' + docRef.id);
+                    alert('✅ تم الحفظ!\n\nمعرف الاختبار: ' + docRef.id + '\nالقسم: ' + targetSubId);
+                    console.log('Debug - Would send:', dataToSend);
                 }
 
             } catch (e) {
@@ -2547,6 +2920,152 @@ ${result.timeout ? '⚠️ انتهى الوقت!' : ''}
                 document.getElementById('loadingScreen').classList.add('hidden');
                 alert('❌ خطأ: ' + e.message);
             }
+        }
+
+        // ═══════════════════════════════════════════════════════
+        //        سجل الإجراءات (Audit Log) - قسم جديد
+        // ═══════════════════════════════════════════════════════
+        
+        // ملاحظة: حذف الإجراءات الأقدم من 48 ساعة سيتم معالجته من طرف البوت (Backend)
+        // هذا الموقع يقرأ البيانات فقط ولا يحذفها
+        
+        let currentLogFilter = 'all';
+
+        async function openAuditLog() {
+            showScreen('auditLogScreen');
+            await loadAuditLogs();
+        }
+
+        async function loadAuditLogs(filter = 'all') {
+            currentLogFilter = filter;
+            
+            const listContainer = document.getElementById('auditLogsList');
+            listContainer.innerHTML = '<div class="loading"><div class="spinner"></div><div class="loading-text">جاري تحميل السجلات...</div></div>';
+
+            try {
+                if (!db) {
+                    throw new Error('Firebase غير متصل');
+                }
+
+                // جلب البيانات مرتبة من الأحدث للأقدم
+                let query = db.collection('bot_actions_log').orderBy('timestamp', 'desc').limit(50);
+
+                const snapshot = await query.get();
+
+                if (snapshot.empty) {
+                    listContainer.innerHTML = `
+                        <div class="logs-empty">
+                            <div class="icon">📭</div>
+                            <h3>لا توجد إجراءات</h3>
+                            <p>لم يتم تسجيل أي إجراءات بعد</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                listContainer.innerHTML = '';
+                let filteredCount = 0;
+
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    
+                    // تطبيق الفلتر
+                    if (filter !== 'all' && data.action_type !== filter) {
+                        return;
+                    }
+                    
+                    filteredCount++;
+                    const logCard = createLogCard(data, doc.id);
+                    listContainer.appendChild(logCard);
+                });
+
+                if (filteredCount === 0) {
+                    listContainer.innerHTML = `
+                        <div class="logs-empty">
+                            <div class="icon">🔍</div>
+                            <h3>لا توجد نتائج</h3>
+                            <p>لا توجد إجراءات من هذا النوع</p>
+                        </div>
+                    `;
+                }
+
+            } catch (e) {
+                console.error('Error loading audit logs:', e);
+                listContainer.innerHTML = `
+                    <div class="logs-empty">
+                        <div class="icon">⚠️</div>
+                        <h3>حدث خطأ</h3>
+                        <p>${e.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        function createLogCard(data, docId) {
+            const card = document.createElement('div');
+            
+            // تحديد نوع الإجراء والأيقونة
+            const actionTypes = {
+                'add': { icon: '➕', label: 'إضافة', class: 'action-add' },
+                'delete': { icon: '🗑️', label: 'حذف', class: 'action-delete' },
+                'edit': { icon: '✏️', label: 'تعديل', class: 'action-edit' },
+                'exam': { icon: '📝', label: 'اختبار', class: 'action-exam' },
+                'default': { icon: '📋', label: 'إجراء', class: '' }
+            };
+
+            const actionInfo = actionTypes[data.action_type] || actionTypes['default'];
+            
+            card.className = `log-card ${actionInfo.class}`;
+            card.id = `log-${docId}`;
+
+            // تنسيق الوقت
+            let timeStr = 'غير محدد';
+            let dateStr = '';
+            if (data.timestamp) {
+                const date = data.timestamp.toDate ? data.timestamp.toDate() : new Date(data.timestamp);
+                timeStr = date.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+                dateStr = date.toLocaleDateString('ar-EG', { day: 'numeric', month: 'short' });
+            }
+
+            // الحصول على الحرف الأول من اسم المستخدم
+            const userName = data.user_name || data.admin_name || 'مجهول';
+            const userInitial = userName.charAt(0).toUpperCase();
+
+            card.innerHTML = `
+                <div class="log-header">
+                    <div class="log-action-type">
+                        <span>${actionInfo.icon}</span>
+                        <span>${actionInfo.label}</span>
+                    </div>
+                    <div class="log-time">
+                        <span>🕐</span>
+                        <span>${timeStr} - ${dateStr}</span>
+                    </div>
+                </div>
+                <div class="log-content">
+                    ${data.description || data.message || 'لا يوجد وصف'}
+                </div>
+                <div class="log-user">
+                    <div class="log-user-avatar">${userInitial}</div>
+                    <span>بواسطة: ${userName}</span>
+                    ${data.user_id ? `<span style="opacity: 0.6;">(${data.user_id})</span>` : ''}
+                </div>
+            `;
+
+            return card;
+        }
+
+        function filterLogs(filter) {
+            // تحديث أزرار الفلتر
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.dataset.filter === filter) {
+                    btn.classList.add('active');
+                }
+            });
+
+            // إعادة تحميل السجلات بالفلتر الجديد
+            loadAuditLogs(filter);
         }
 
         // ═══════════════════════════════════════════════════════
@@ -2863,16 +3382,6 @@ ${result.timeout ? '⚠️ انتهى الوقت!' : ''}
             }
         });
 
-        // CSS للحركات
-        const fadeOutStyle = document.createElement('style');
-        fadeOutStyle.textContent = `
-            @keyframes fadeOut {
-                from { opacity: 1; transform: translateX(0); }
-                to { opacity: 0; transform: translateX(-20px); }
-            }
-        `;
-        document.head.appendChild(fadeOutStyle);
-
         // إغلاق القائمة عند النقر خارجها
         document.addEventListener('click', function(e) {
             const menu = document.getElementById('dropdownMenu');
@@ -2881,8 +3390,17 @@ ${result.timeout ? '⚠️ انتهى الوقت!' : ''}
             if (menu && !menu.contains(e.target) && !menuBtn?.contains(e.target)) {
                 menu.classList.remove('show');
             }
+
+            // إغلاق قائمة الأقسام عند النقر خارجها
+            const categorySelector = document.getElementById('categorySelector');
+            const categoryTree = document.getElementById('categoryTree');
+            if (categoryTree && categorySelector && !categorySelector.contains(e.target)) {
+                categoryTree.classList.remove('open');
+                const header = document.querySelector('.category-selector-header');
+                if (header) header.classList.remove('open');
+            }
         });
     </script>
 
 </body>
-</html>    
+</html>       
